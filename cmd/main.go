@@ -2,18 +2,16 @@ package main
 
 import (
 	"fmt"
-	"log"
-
-	"github.com/andream16/mitmcracker"
+	"math"
 )
 
 func main() {
 
-	in, err := mitmcracker.New()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// _, err := mitmcracker.New()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	fmt.Println(in.String())
+	fmt.Println(math.Pow(2, 32))
 
 }
