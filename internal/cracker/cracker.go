@@ -5,8 +5,11 @@ import (
 	"os/exec"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/andream16/mitmcracker/internal/repository"
+
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 const (
@@ -49,19 +52,13 @@ func New(
 		encText:        encText,
 		maxParallelism: getMaxParallelism(),
 		keyLenght:      keyLenght,
-		keysNumber:     getKeyNumber(keyLenght),
+		keysNumber:     GetKeyNumber(keyLenght),
 		repository:     repository,
 	}
 }
 
-type encDecTask struct {
+type task struct {
 	cmd      *exec.Cmd
-	key      string
-	taskType string
-}
-
-type repoTask struct {
-	output   []byte
 	key      string
 	taskType string
 }
@@ -70,63 +67,59 @@ type repoTask struct {
 func (c *Cracker) Crack() (string, error) {
 
 	var (
-		wgTasks     sync.WaitGroup
-		wgRepo      sync.WaitGroup
-		encDecTasks = make(chan encDecTask, c.maxParallelism)
-		repoTasks   = make(chan repoTask, c.maxParallelism)
+		bar            = pb.StartNew(c.keysNumber)
+		maxConcurrency = getMaxParallelism()
+		tasks          = make(chan task)
+		tK             = 0
+		wg             sync.WaitGroup
 	)
 
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			bar.Add(tK)
+		}
+	}()
+
+	defer bar.FinishPrint("done")
+
+	wg.Add(maxConcurrency)
+
+	for i := 0; i <= maxConcurrency; i++ {
+		go func(i int, wg *sync.WaitGroup) {
+			for task := range tasks {
+				defer wg.Done()
+				b, err := task.cmd.Output()
+				if err != nil {
+					continue
+				}
+				switch task.taskType {
+				case encodeTask:
+					c.repository.InsertEnc(task.key, string(b))
+				case decodeTask:
+					c.repository.InsertDec(task.key, string(b))
+				}
+			}
+		}(i, &wg)
+	}
+
 	for k := 0; k <= c.keysNumber; k++ {
+		tK = k
 		fK := formatKey(k, c.keyLenght)
-		encDecTasks <- encDecTask{
+		tasks <- task{
 			cmd:      encode(fK, c.plainText),
 			key:      fK,
 			taskType: encodeTask,
 		}
-		encDecTasks <- encDecTask{
+		tasks <- task{
 			cmd:      decode(fK, c.plainText),
 			key:      fK,
 			taskType: decodeTask,
 		}
 	}
 
-	for t := range encDecTasks {
-		wgTasks.Add(1)
-		var (
-			b   []byte
-			err error
-		)
-		go func(cmd *exec.Cmd, wg *sync.WaitGroup) {
-			defer wg.Done()
-			b, err = cmd.Output()
-		}(t.cmd, &wgTasks)
-		if err != nil {
-			return "", err
-		}
-		repoTasks <- repoTask{
-			output:   b,
-			key:      t.key,
-			taskType: t.taskType,
-		}
-	}
-
-	for t := range repoTasks {
-		wgRepo.Add(1)
-		go func(task repoTask, wg *sync.WaitGroup) {
-			defer wg.Done()
-			switch task.taskType {
-			case encodeTask:
-				c.repository.InsertEnc(task.key, string(task.output))
-			case decodeTask:
-				c.repository.InsertDec(task.key, string(task.output))
-			}
-		}(t, &wgRepo)
-	}
-
-	close(encDecTasks)
-	close(repoTasks)
-	wgTasks.Wait()
-	wgRepo.Wait()
+	close(tasks)
+	wg.Wait()
 
 	return c.repository.FindKey(), nil
 }
@@ -148,7 +141,8 @@ func getMaxParallelism() int {
 	return numCPU
 }
 
-func getKeyNumber(keyLenght uint) int {
+// GetKeyNumber returns the number of keys to be generated.
+func GetKeyNumber(keyLenght uint) int {
 	k, _ := keyLenghtToKeyNumber[keyLenght]
 	return k
 }
