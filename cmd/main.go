@@ -2,16 +2,34 @@ package main
 
 import (
 	"fmt"
-	"math"
+	"log"
+
+	"github.com/andream16/mitmcracker"
+	"github.com/andream16/mitmcracker/internal/cracker"
+	"github.com/andream16/mitmcracker/internal/repository/memory"
 )
 
 func main() {
 
-	// _, err := mitmcracker.New()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	in, err := mitmcracker.New()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	fmt.Println(math.Pow(2, 32))
+	repo := memory.New(cracker.GetKeyNumber(in.KeyLength))
+
+	cracker := cracker.New(
+		in.PlainText,
+		in.EncText,
+		in.KeyLength,
+		repo,
+	)
+
+	key, err := cracker.Crack()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(fmt.Sprintf("found key %s", key))
 
 }
