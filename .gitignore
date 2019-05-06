@@ -4,3 +4,5 @@ mitmcracker
 resources/*.cmi
 resources/*.cmx
 resources/*.o
+resources/encrypt
+resources/decrypt
