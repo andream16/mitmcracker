@@ -1,10 +1,17 @@
 package redis
 
 import (
-	"log"
+	"errors"
 
 	"github.com/go-redis/redis"
 )
+
+const (
+	decKey = "dec"
+	encKey = "enc"
+)
+
+var errNotFound = errors.New("key_not_found")
 
 // Redis is a wrapper to redis.
 type Redis struct {
@@ -16,6 +23,12 @@ type Config struct {
 	Address  string
 	DB       int
 	Password string
+}
+
+// Keys is the final result of FindKeys.
+type Keys struct {
+	EncKey string
+	DecKey string
 }
 
 // New returns a new redis client.
@@ -37,49 +50,58 @@ func (r *Redis) Close() error {
 
 // InsertDec adds a new entry in dec map.
 func (r *Redis) InsertDec(key, cipherText string) error {
-	return r.Client.HMSet("dec", map[string]interface{}{
+	return r.Client.HMSet(decKey, map[string]interface{}{
 		key: cipherText,
 	}).Err()
 }
 
 // InsertEnc adds a new entry in dec map.
 func (r *Redis) InsertEnc(key, cipherText string) error {
-	return r.Client.HMSet("enc", map[string]interface{}{
+	return r.Client.HMSet(encKey, map[string]interface{}{
 		key: cipherText,
 	}).Err()
 }
 
-// FindKey returns the common key.
-func (r *Redis) FindKey() (string, error) {
-	log.Println("ok1")
-	scanCmd := r.Client.HScan("dec", 0, "", 0)
-	if scanCmd.Err() != nil {
-		return "", scanCmd.Err()
-	}
-	log.Println("ok2")
-	for {
-		v := scanCmd.Iterator().Val()
-		log.Println("ok3", v)
-		getCmd := r.Client.HGet("enc", v)
-		if getCmd.Err() != nil {
-			return "", getCmd.Err()
-		}
-		log.Println("ok4")
-		k, err := getCmd.Result()
+// FindKeys returns the common key.
+func (r *Redis) FindKeys() (*Keys, error) {
+	iter := r.Client.HScan(decKey, 0, "", 0).Iterator()
+	for iter.Next() {
+		encK, err := r.get(encKey, iter.Val())
 		if err != nil {
-			return "", getCmd.Err()
+			if err == errNotFound {
+				continue
+			}
+			return nil, err
 		}
-		log.Println("ok5")
-		if k != "" {
-			log.Println("ok-yo")
-			return k, nil
+		if encK != "" {
+			decK, err := r.get(decKey, iter.Val())
+			if err != nil {
+				if err == errNotFound {
+					continue
+				}
+				return nil, err
+			}
+			return &Keys{
+				EncKey: encK,
+				DecKey: decK,
+			}, nil
 		}
-		if !scanCmd.Iterator().Next() {
-			log.Println("ok-exit")
-			break
-		}
-		log.Println("ok-continue")
 	}
-	log.Println("ok-def")
-	return "", nil
+	return nil, iter.Err()
+}
+
+func (r *Redis) get(hmName, key string) (string, error) {
+	cmd := r.Client.HGet(hmName, key)
+	err := cmd.Err()
+	if err != nil {
+		if err == redis.Nil {
+			return "", errNotFound
+		}
+		return "", err
+	}
+	res, err := cmd.Result()
+	if err != nil {
+		return "", err
+	}
+	return res, nil
 }

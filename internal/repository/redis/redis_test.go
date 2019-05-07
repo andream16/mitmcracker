@@ -1,4 +1,3 @@
-//+build integration
 
 package redis
 
@@ -6,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-redis/redis"
+	"github.com/pkg/errors"
 )
 
 func TestRedis_InsertDec(t *testing.T) {
@@ -16,20 +16,16 @@ func TestRedis_InsertDec(t *testing.T) {
 			t.Fatalf("unexpected error %s", err)
 		}
 	}()
-	err := r.InsertDec("key1", "val1")
+	err := r.InsertDec("cipherDec", "keyDec")
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
-	cmd := r.Client.HGet("dec", "key1")
-	if cmd.Err() != nil {
-		t.Fatalf("unexpected error %s", cmd.Err())
-	}
-	v, err := cmd.Result()
+	v, err := r.get(decKey, "cipherDec")
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
-	if "val1" != v {
-		t.Fatalf("expected %s, got %s", "val1", v)
+	if "keyDec" != v {
+		t.Fatalf("expected %s, got %s", "keyDec", v)
 	}
 }
 
@@ -41,46 +37,68 @@ func TestRedis_InsertEnc(t *testing.T) {
 			t.Fatalf("unexpected error %s", err)
 		}
 	}()
-	err := r.InsertEnc("key1", "val1")
+	err := r.InsertEnc("cipherEnc", "keyEnc")
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
-	cmd := r.Client.HGet("dec", "key1")
-	if cmd.Err() != nil {
-		t.Fatalf("unexpected error %s", cmd.Err())
-	}
-	v, err := cmd.Result()
+	v, err := r.get(encKey, "cipherEnc")
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
-	if "val1" != v {
-		t.Fatalf("expected %s, got %s", "val1", v)
+	if "keyEnc" != v {
+		t.Fatalf("expected %s, got %s", "keyEnc", v)
 	}
 }
 
 func TestRedis_FindKey(t *testing.T) {
-	r := newRedis(t)
-	defer func() {
-		err := r.Close()
-		if err != redis.Nil {
+	t.Run("should find two keys for same cipher text", func(t *testing.T) {
+		r := newRedis(t)
+		defer func() {
+			err := r.Close()
+			if err != redis.Nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+		}()
+		err := r.InsertEnc("cipher", "encKey")
+		if err != nil {
 			t.Fatalf("unexpected error %s", err)
 		}
-	}()
-	err := r.InsertEnc("cipher", "key1")
-	if err != nil {
-		t.Fatalf("unexpected error %s", err)
-	}
-	err = r.InsertDec("cipher", "key1")
-	if err != nil {
-		t.Fatalf("unexpected error %s", err)
-	}
-	key, err := r.FindKey()
-	if err != nil {
-		t.Fatalf("unexpected error %s", err)
-	}
-	if "ke1" != key {
-		t.Fatalf("expected %s, got %s", "key1", key)
-	}
+		err = r.InsertDec("cipher", "decKey")
+		if err != nil {
+			t.Fatalf("unexpected error %s", err)
+		}
+		res, err := r.FindKeys()
+		if err != nil {
+			t.Fatalf("unexpected error %s", err)
+		}
+		if "encKey" != res.EncKey {
+			t.Fatalf("expected %s, got %s", "encKey", res.EncKey)
+		}
+		if "decKey" != res.DecKey {
+			t.Fatalf("expected %s, got %s", "decKey", res.DecKey)
+		}
+	})
+	t.Run("should return not found error", func(t *testing.T) {
+		r := newRedis(t)
+		defer func() {
+			err := r.Close()
+			if err != redis.Nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+		}()
+		err := r.InsertEnc("cipher", "encKey")
+		if err != nil {
+			t.Fatalf("unexpected error %s", err)
+		}
+		err = r.InsertDec("a", "decKey")
+		if err != nil {
+			t.Fatalf("unexpected error %s", err)
+		}
+		_, err = r.FindKeys()
+		if errNotFound != errors.Cause(err) {
+			t.Fatalf("expected error not found, got %s", err)
+		}
+	})
 }
 
 func newRedis(t *testing.T) *Redis {
