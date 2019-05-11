@@ -6,3 +6,4 @@ resources/*.cmx
 resources/*.o
 resources/encrypt
 resources/decrypt
+node_modules/
