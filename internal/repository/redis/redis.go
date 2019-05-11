@@ -87,7 +87,10 @@ func (r *Redis) FindKeys() (*Keys, error) {
 			}, nil
 		}
 	}
-	return nil, iter.Err()
+	if iter.Err() != nil {
+		return nil, iter.Err()
+	}
+	return nil, errNotFound
 }
 
 func (r *Redis) get(hmName, key string) (string, error) {

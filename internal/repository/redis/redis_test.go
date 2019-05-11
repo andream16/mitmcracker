@@ -11,6 +11,7 @@ import (
 func TestRedis_InsertDec(t *testing.T) {
 	r := newRedis(t)
 	defer func() {
+		cleanUp(r, t, decKey)
 		err := r.Close()
 		if err != redis.Nil {
 			t.Fatalf("unexpected error %s", err)
@@ -32,6 +33,7 @@ func TestRedis_InsertDec(t *testing.T) {
 func TestRedis_InsertEnc(t *testing.T) {
 	r := newRedis(t)
 	defer func() {
+		cleanUp(r, t, encKey)
 		err := r.Close()
 		if err != redis.Nil {
 			t.Fatalf("unexpected error %s", err)
@@ -54,6 +56,7 @@ func TestRedis_FindKey(t *testing.T) {
 	t.Run("should find two keys for same cipher text", func(t *testing.T) {
 		r := newRedis(t)
 		defer func() {
+			cleanUp(r, t, encKey, decKey)
 			err := r.Close()
 			if err != redis.Nil {
 				t.Fatalf("unexpected error %s", err)
@@ -81,16 +84,17 @@ func TestRedis_FindKey(t *testing.T) {
 	t.Run("should return not found error", func(t *testing.T) {
 		r := newRedis(t)
 		defer func() {
+			cleanUp(r, t, encKey, decKey)
 			err := r.Close()
 			if err != redis.Nil {
 				t.Fatalf("unexpected error %s", err)
 			}
 		}()
-		err := r.InsertEnc("cipher", "encKey")
+		err := r.InsertEnc("c", "e")
 		if err != nil {
 			t.Fatalf("unexpected error %s", err)
 		}
-		err = r.InsertDec("a", "decKey")
+		err = r.InsertDec("a", "d")
 		if err != nil {
 			t.Fatalf("unexpected error %s", err)
 		}
@@ -110,4 +114,11 @@ func newRedis(t *testing.T) *Redis {
 		t.Fatalf("unexpected error %s", err)
 	}
 	return r
+}
+
+func cleanUp(r *Redis, t *testing.T, keys ...string) {
+	err := r.Client.Del(keys...).Err()
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
 }

@@ -81,7 +81,7 @@ func (c *Cracker) Crack() (string, error) {
 		}
 	}()
 
-	defer bar.FinishPrint("done")
+	defer bar.Finish()
 
 	wg.Add(maxConcurrency)
 
