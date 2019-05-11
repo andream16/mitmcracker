@@ -1,6 +1,11 @@
 package memory
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/andream16/mitmcracker/internal/repository"
+	"github.com/pkg/errors"
+)
 
 func TestInMemo_InsertDec(t *testing.T) {
 
@@ -53,11 +58,19 @@ func TestFindKey(t *testing.T) {
 		m.InsertEnc(key, cipherText)
 		m.InsertDec(key, cipherText)
 
-		k := m.FindKey()
-		if k == "" {
-			t.Fatalf("expected %s, got an empty string", key)
+		k, err := m.FindKeys()
+		if err != nil {
+			t.Fatalf("unexpected error %s", err)
 		}
-
+		if k == nil {
+			t.Fatal("result is nil")
+		}
+		if key != k.EncKey {
+			t.Fatalf("expected key %s, got %s", key, k.EncKey)
+		}
+		if key != k.DecKey {
+			t.Fatalf("expected key %s, got %s", key, k.DecKey)
+		}
 	})
 
 	t.Run("should not find a common cipherText", func(t *testing.T) {
@@ -69,8 +82,11 @@ func TestFindKey(t *testing.T) {
 		m.InsertEnc(key, cipherText)
 		m.InsertDec(key, "AAAAA")
 
-		k := m.FindKey()
-		if k != "" {
+		k, err := m.FindKeys()
+		if repository.ErrNotFound != errors.Cause(err) {
+			t.Fatalf("expected %s, got %s", repository.ErrNotFound, err)
+		}
+		if k != nil {
 			t.Fatalf("expected an empty string, got %s", k)
 		}
 

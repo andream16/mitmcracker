@@ -25,11 +25,11 @@ func main() {
 		repo,
 	)
 
-	key, err := cracker.Crack()
+	keys, err := cracker.Crack()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(fmt.Sprintf("found key %s", key))
+	fmt.Println(fmt.Sprintf("found encoding key: %s & decoding key: %s", keys.EncKey, keys.DecKey))
 
 }

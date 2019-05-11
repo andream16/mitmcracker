@@ -1,6 +1,12 @@
 package memory
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/andream16/mitmcracker/internal/repository"
+)
+
+var _ repository.Repositorer = (*InMemo)(nil)
 
 // InMemo represents an in-memory map.
 type InMemo struct {
@@ -18,7 +24,7 @@ func New(size int) *InMemo {
 }
 
 // InsertDec adds a new entry in dec map.
-func (im *InMemo) InsertDec(key, cipherText string) {
+func (im *InMemo) InsertDec(key, cipherText string) error {
 
 	im.Lock()
 	defer im.Unlock()
@@ -28,11 +34,12 @@ func (im *InMemo) InsertDec(key, cipherText string) {
 	}
 
 	im.Dec[cipherText] = key
+	return nil
 
 }
 
 // InsertEnc adds a new entry in enc map.
-func (im *InMemo) InsertEnc(key, cipherText string) {
+func (im *InMemo) InsertEnc(key, cipherText string) error {
 
 	im.Lock()
 	defer im.Unlock()
@@ -42,19 +49,23 @@ func (im *InMemo) InsertEnc(key, cipherText string) {
 	}
 
 	im.Enc[cipherText] = key
+	return nil
 
 }
 
-// FindKey returns the key used to encode & decode the same message.
-func (im *InMemo) FindKey() string {
+// FindKeys returns the keys used to encode and decode the message.
+func (im *InMemo) FindKeys() (*repository.Keys, error) {
 
-	for ek := range im.Enc {
-		_, ok := im.Dec[ek]
+	for ek, ev := range im.Enc {
+		dv, ok := im.Dec[ek]
 		if ok {
-			return ek
+			return &repository.Keys{
+				EncKey: ev,
+				DecKey: dv,
+			}, nil
 		}
 	}
 
-	return ""
+	return nil, repository.ErrNotFound
 
 }

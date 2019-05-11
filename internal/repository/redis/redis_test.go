@@ -4,6 +4,8 @@ package redis
 import (
 	"testing"
 
+	"github.com/andream16/mitmcracker/internal/repository"
+
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 )
@@ -99,7 +101,7 @@ func TestRedis_FindKey(t *testing.T) {
 			t.Fatalf("unexpected error %s", err)
 		}
 		_, err = r.FindKeys()
-		if errNotFound != errors.Cause(err) {
+		if repository.ErrNotFound != errors.Cause(err) {
 			t.Fatalf("expected error not found, got %s", err)
 		}
 	})

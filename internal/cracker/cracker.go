@@ -64,7 +64,7 @@ type task struct {
 }
 
 // Crack executes the cracker process.
-func (c *Cracker) Crack() (string, error) {
+func (c *Cracker) Crack() (*repository.Keys, error) {
 
 	var (
 		bar            = pb.StartNew(c.keysNumber)
@@ -121,7 +121,7 @@ func (c *Cracker) Crack() (string, error) {
 	close(tasks)
 	wg.Wait()
 
-	return c.repository.FindKey(), nil
+	return c.repository.FindKeys()
 }
 
 func encode(key, plainText string) *exec.Cmd {

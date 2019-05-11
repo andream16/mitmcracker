@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"errors"
+	"github.com/andream16/mitmcracker/internal/repository"
 
 	"github.com/go-redis/redis"
 )
@@ -11,7 +11,7 @@ const (
 	encKey = "enc"
 )
 
-var errNotFound = errors.New("key_not_found")
+var _ repository.Repositorer = (*Redis)(nil)
 
 // Redis is a wrapper to redis.
 type Redis struct {
@@ -23,12 +23,6 @@ type Config struct {
 	Address  string
 	DB       int
 	Password string
-}
-
-// Keys is the final result of FindKeys.
-type Keys struct {
-	EncKey string
-	DecKey string
 }
 
 // New returns a new redis client.
@@ -62,13 +56,13 @@ func (r *Redis) InsertEnc(key, cipherText string) error {
 	}).Err()
 }
 
-// FindKeys returns the common key.
-func (r *Redis) FindKeys() (*Keys, error) {
+// FindKeys returns the keys used to encode and decode the message.
+func (r *Redis) FindKeys() (*repository.Keys, error) {
 	iter := r.Client.HScan(decKey, 0, "", 0).Iterator()
 	for iter.Next() {
 		encK, err := r.get(encKey, iter.Val())
 		if err != nil {
-			if err == errNotFound {
+			if err == repository.ErrNotFound {
 				continue
 			}
 			return nil, err
@@ -76,12 +70,12 @@ func (r *Redis) FindKeys() (*Keys, error) {
 		if encK != "" {
 			decK, err := r.get(decKey, iter.Val())
 			if err != nil {
-				if err == errNotFound {
+				if err == repository.ErrNotFound {
 					continue
 				}
 				return nil, err
 			}
-			return &Keys{
+			return &repository.Keys{
 				EncKey: encK,
 				DecKey: decK,
 			}, nil
@@ -90,7 +84,7 @@ func (r *Redis) FindKeys() (*Keys, error) {
 	if iter.Err() != nil {
 		return nil, iter.Err()
 	}
-	return nil, errNotFound
+	return nil, repository.ErrNotFound
 }
 
 func (r *Redis) get(hmName, key string) (string, error) {
@@ -98,7 +92,7 @@ func (r *Redis) get(hmName, key string) (string, error) {
 	err := cmd.Err()
 	if err != nil {
 		if err == redis.Nil {
-			return "", errNotFound
+			return "", repository.ErrNotFound
 		}
 		return "", err
 	}
