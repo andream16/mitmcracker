@@ -67,7 +67,7 @@ type task struct {
 func (c *Cracker) Crack() (*repository.Keys, error) {
 
 	var (
-		bar            = pb.StartNew(c.keysNumber)
+		bar            = pb.StartNew(c.keysNumber * 2)
 		maxConcurrency = getMaxParallelism()
 		tasks          = make(chan task)
 		tK             = 0
@@ -77,7 +77,7 @@ func (c *Cracker) Crack() (*repository.Keys, error) {
 	go func() {
 		for {
 			time.Sleep(5 * time.Second)
-			bar.Add(tK)
+			bar.Set(tK)
 		}
 	}()
 
@@ -89,6 +89,7 @@ func (c *Cracker) Crack() (*repository.Keys, error) {
 		go func(i int, wg *sync.WaitGroup) {
 			for task := range tasks {
 				defer wg.Done()
+				tK++
 				b, err := task.cmd.Output()
 				if err != nil {
 					continue
@@ -104,7 +105,6 @@ func (c *Cracker) Crack() (*repository.Keys, error) {
 	}
 
 	for k := 0; k <= c.keysNumber; k++ {
-		tK = k
 		fK := formatKey(k, c.keyLenght)
 		tasks <- task{
 			cmd:      encode(fK, c.plainText),

@@ -6,7 +6,7 @@ import (
 
 	"github.com/andream16/mitmcracker"
 	"github.com/andream16/mitmcracker/internal/cracker"
-	"github.com/andream16/mitmcracker/internal/repository/memory"
+	"github.com/andream16/mitmcracker/internal/repository/redis"
 )
 
 func main() {
@@ -16,7 +16,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	repo := memory.New(cracker.GetKeyNumber(in.KeyLength))
+	repo, err := redis.New(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	cracker := cracker.New(
 		in.PlainText,

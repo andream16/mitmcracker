@@ -108,10 +108,7 @@ func TestRedis_FindKey(t *testing.T) {
 }
 
 func newRedis(t *testing.T) *Redis {
-	cfg := &Config{
-		Address: "localhost:6379",
-	}
-	r, err := New(cfg)
+	r, err := New(nil)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}

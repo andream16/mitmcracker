@@ -27,14 +27,25 @@ type Config struct {
 
 // New returns a new redis client.
 func New(cfg *Config) (*Redis, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.Address,
-		Password: cfg.Password,
-		DB:       cfg.DB,
-	})
+	client := redis.NewClient(buildOptions(cfg))
 	return &Redis{
 		Client: client,
 	}, client.Ping().Err()
+}
+
+func buildOptions(cfg *Config) *redis.Options {
+	opt := &redis.Options{}
+	if cfg != nil {
+		opt = &redis.Options{
+			Addr:     cfg.Address,
+			Password: cfg.Password,
+			DB:       cfg.DB,
+		}
+	}
+	if opt.Addr == "" {
+		opt.Addr = "localhost:6379"
+	}
+	return opt
 }
 
 // Close closes the connection to the client.
