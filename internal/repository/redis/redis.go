@@ -18,29 +18,32 @@ type Redis struct {
 	Client *redis.Client
 }
 
-// Config is the redis conf.
-type Config struct {
-	Address  string
-	DB       int
-	Password string
-}
-
 // New returns a new redis client.
-func New(cfg *Config) (*Redis, error) {
-	client := redis.NewClient(buildOptions(cfg))
+func New(
+	address string,
+	password string,
+	db int,
+) (*Redis, error) {
+	opt := buildOptions(
+		address,
+		password,
+		db,
+	)
+	client := redis.NewClient(opt)
 	return &Redis{
 		Client: client,
 	}, client.Ping().Err()
 }
 
-func buildOptions(cfg *Config) *redis.Options {
-	opt := &redis.Options{}
-	if cfg != nil {
-		opt = &redis.Options{
-			Addr:     cfg.Address,
-			Password: cfg.Password,
-			DB:       cfg.DB,
-		}
+func buildOptions(
+	address string,
+	password string,
+	db int,
+) *redis.Options {
+	opt := &redis.Options{
+		Addr:     address,
+		Password: password,
+		DB:       db,
 	}
 	if opt.Addr == "" {
 		opt.Addr = "localhost:6379"
@@ -87,8 +90,8 @@ func (r *Redis) FindKeys() (*repository.Keys, error) {
 				return nil, err
 			}
 			return &repository.Keys{
-				EncKey: encK,
-				DecKey: decK,
+				Encode: encK,
+				Decode: decK,
 			}, nil
 		}
 	}

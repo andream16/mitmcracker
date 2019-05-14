@@ -1,5 +1,6 @@
 build:
-	go build -o mitmcracker cmd/main.go
+	CGO_ENABLED=0 GO111MODULE=on go build -ldflags "-s -w" -o mitmcracker cmd/main.go
+
 test:
 	gotest ./... -cover -race -count=1
 test-integration:

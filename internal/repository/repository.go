@@ -14,6 +14,6 @@ type Repositorer interface {
 
 // Keys is the final result of FindKeys.
 type Keys struct {
-	EncKey string
-	DecKey string
+	Encode string
+	Decode string
 }

@@ -48,7 +48,9 @@ func TestInput_validate(t *testing.T) {
 			KeyLength: 28,
 			EncText:   "someEncryptedText",
 			PlainText: "somePlainText",
-			Storage:   "xyz",
+			Storage: &Storage{
+				Type: "xyz",
+			},
 		}
 		err := i.validate()
 		if errInvalidField != errors.Cause(err) {

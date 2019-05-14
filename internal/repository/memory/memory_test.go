@@ -58,18 +58,18 @@ func TestFindKey(t *testing.T) {
 		m.InsertEnc(key, cipherText)
 		m.InsertDec(key, cipherText)
 
-		k, err := m.FindKeys()
+		keys, err := m.FindKeys()
 		if err != nil {
 			t.Fatalf("unexpected error %s", err)
 		}
-		if k == nil {
+		if keys == nil {
 			t.Fatal("result is nil")
 		}
-		if key != k.EncKey {
-			t.Fatalf("expected key %s, got %s", key, k.EncKey)
+		if key != keys.Encode {
+			t.Fatalf("expected key %s, got %s", key, keys.Encode)
 		}
-		if key != k.DecKey {
-			t.Fatalf("expected key %s, got %s", key, k.DecKey)
+		if key != keys.Decode {
+			t.Fatalf("expected key %s, got %s", key, keys.Decode)
 		}
 	})
 

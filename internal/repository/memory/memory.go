@@ -60,8 +60,8 @@ func (im *InMemo) FindKeys() (*repository.Keys, error) {
 		dv, ok := im.Dec[ek]
 		if ok {
 			return &repository.Keys{
-				EncKey: ev,
-				DecKey: dv,
+				Encode: ev,
+				Decode: dv,
 			}, nil
 		}
 	}

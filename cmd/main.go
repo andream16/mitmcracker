@@ -6,6 +6,8 @@ import (
 
 	"github.com/andream16/mitmcracker"
 	"github.com/andream16/mitmcracker/internal/cracker"
+	"github.com/andream16/mitmcracker/internal/repository"
+	"github.com/andream16/mitmcracker/internal/repository/memory"
 	"github.com/andream16/mitmcracker/internal/repository/redis"
 )
 
@@ -16,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	repo, err := redis.New(nil)
+	repo, err := newRepository(in)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,6 +35,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(fmt.Sprintf("found encoding key: %s & decoding key: %s", keys.EncKey, keys.DecKey))
+	fmt.Println(fmt.Sprintf("found encoding key: %s & decoding key: %s", keys.Encode, keys.Decode))
+
+}
+
+func newRepository(in *mitmcracker.Input) (repository.Repositorer, error) {
+
+	if in.Storage.Type == "disk" {
+		return redis.New(in.Storage.Address, in.Storage.Password, in.Storage.DB)
+	}
+
+	return memory.New(cracker.GetKeyNumber(in.KeyLength)), nil
 
 }

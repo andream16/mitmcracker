@@ -2,7 +2,6 @@ package mitmcracker
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -34,33 +33,45 @@ type Input struct {
 	//  - 28-bit
 	//  - 32-bit
 	KeyLength uint
-	// Storage is the type of storage to be used.
+	Storage   *Storage
+}
+
+// Storage contains storage information.
+type Storage struct {
+	// Type is the type of storage to be used.
 	// Can only be:
 	// - memory
 	// - disk
 	// If no option is provided, memory will be used by default.
-	Storage string
+	Type string
+	// Address is the address of redis. It's optional.
+	Address string
+	// Password is the password of the redis database. It's optional.
+	Password string
+	// DB is the redis DB. It's optional.
+	DB int
 }
 
 // New returns a new Input.
 func New() (*Input, error) {
 
 	in := &Input{}
+	storage := &Storage{}
 
 	flag.UintVar(&in.KeyLength, "key", 0, "key lenght")
 	flag.StringVar(&in.PlainText, "plain", "", "known plain text")
 	flag.StringVar(&in.EncText, "encoded", "", "known encoded text")
-	flag.StringVar(&in.Storage, "storage", "", "storage to be used")
+	flag.StringVar(&storage.Type, "storage.type", "", "storage to be used")
+	flag.StringVar(&storage.Address, "storage.address", "", "storage address")
+	flag.StringVar(&storage.Password, "storage.password", "", "storage password")
+	flag.IntVar(&storage.DB, "storage.db", 0, "storage db")
 
 	flag.Parse()
 
+	in.Storage = storage
+
 	return in, in.validate()
 
-}
-
-// String returns the string representation of an input.
-func (i *Input) String() string {
-	return fmt.Sprintf("key: %d, plain-text: %s, encoded-text: %s, storage: %s", i.KeyLength, i.PlainText, i.EncText, i.Storage)
 }
 
 func (i *Input) validate() error {
@@ -74,8 +85,8 @@ func (i *Input) validate() error {
 	if i.PlainText == "" {
 		return errors.Wrap(errInvalidField, "known plain text")
 	}
-	if i.Storage != "" {
-		_, ok := storages[i.Storage]
+	if i.Storage != nil && i.Storage.Type != "" {
+		_, ok := storages[i.Storage.Type]
 		if !ok {
 			return errors.Wrap(errInvalidField, "storage")
 		}

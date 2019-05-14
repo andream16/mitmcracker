@@ -29,9 +29,9 @@ type Cracker struct {
 	plainText string
 	// encText is the known encoded text.
 	encText string
-	// maxParallelism is the maximum number of go routines that
+	// maxConcurrency is the maximum number of go routines that
 	// can be spawned on runtime.
-	maxParallelism int
+	maxConcurrency int
 	// keyLenght is the key lenght to be used.
 	keyLenght uint
 	// keysNumber is the number of keys to be generated.
@@ -50,7 +50,7 @@ func New(
 	return &Cracker{
 		plainText:      plainText,
 		encText:        encText,
-		maxParallelism: getMaxParallelism(),
+		maxConcurrency: getMaxConcurrency(),
 		keyLenght:      keyLenght,
 		keysNumber:     GetKeyNumber(keyLenght),
 		repository:     repository,
@@ -67,11 +67,10 @@ type task struct {
 func (c *Cracker) Crack() (*repository.Keys, error) {
 
 	var (
-		bar            = pb.StartNew(c.keysNumber * 2)
-		maxConcurrency = getMaxParallelism()
-		tasks          = make(chan task)
-		tK             = 0
-		wg             sync.WaitGroup
+		bar   = pb.StartNew(c.keysNumber * 2)
+		tasks = make(chan task)
+		tK    = 0
+		wg    sync.WaitGroup
 	)
 
 	go func() {
@@ -83,13 +82,13 @@ func (c *Cracker) Crack() (*repository.Keys, error) {
 
 	defer bar.Finish()
 
-	wg.Add(maxConcurrency)
+	wg.Add(c.maxConcurrency)
 
-	for i := 0; i <= maxConcurrency; i++ {
+	for i := 0; i <= c.maxConcurrency; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			for task := range tasks {
-				defer wg.Done()
 				tK++
+				defer wg.Done()
 				b, err := task.cmd.Output()
 				if err != nil {
 					continue
@@ -132,7 +131,7 @@ func decode(key, encText string) *exec.Cmd {
 	return exec.Command("./resources/decrypt", "-s", key, encText)
 }
 
-func getMaxParallelism() int {
+func getMaxConcurrency() int {
 	maxProcs := runtime.GOMAXPROCS(0)
 	numCPU := runtime.NumCPU()
 	if maxProcs < numCPU {

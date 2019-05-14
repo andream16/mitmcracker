@@ -72,15 +72,15 @@ func TestRedis_FindKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error %s", err)
 		}
-		res, err := r.FindKeys()
+		keys, err := r.FindKeys()
 		if err != nil {
 			t.Fatalf("unexpected error %s", err)
 		}
-		if "encKey" != res.EncKey {
-			t.Fatalf("expected %s, got %s", "encKey", res.EncKey)
+		if "encKey" != keys.Encode {
+			t.Fatalf("expected %s, got %s", "encKey", keys.Encode)
 		}
-		if "decKey" != res.DecKey {
-			t.Fatalf("expected %s, got %s", "decKey", res.DecKey)
+		if "decKey" != keys.Decode {
+			t.Fatalf("expected %s, got %s", "decKey", keys.Decode)
 		}
 	})
 	t.Run("should return not found error", func(t *testing.T) {
@@ -108,7 +108,7 @@ func TestRedis_FindKey(t *testing.T) {
 }
 
 func newRedis(t *testing.T) *Redis {
-	r, err := New(nil)
+	r, err := New("", "", 0)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
