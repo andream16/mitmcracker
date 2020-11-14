@@ -6,66 +6,44 @@ import (
 	"github.com/andream16/mitmcracker/internal/repository"
 )
 
-var _ repository.Repositorer = (*InMemo)(nil)
-
 // InMemo represents an in-memory map.
 type InMemo struct {
 	sync.Mutex
-	Dec map[string]string
-	Enc map[string]string
+
+	KeyPairs map[string]*repository.KeyPair
 }
 
-// New returns a new *InMemo with fixed size maps.
-func New(size int) *InMemo {
-	return &InMemo{
-		Dec: make(map[string]string, size),
-		Enc: make(map[string]string, size),
-	}
-}
-
-// InsertDec adds a new entry in dec map.
-func (im *InMemo) InsertDec(key, cipherText string) error {
-
+// Insert
+func (im *InMemo) Insert(key, cipherText string, mode repository.Mode) (*repository.KeyPair, bool, error) {
 	im.Lock()
 	defer im.Unlock()
 
-	if len(im.Dec) == 0 {
-		im.Dec = map[string]string{}
+	if err := mode.Validate(); err != nil {
+		return nil, false, err
 	}
 
-	im.Dec[cipherText] = key
-	return nil
-
-}
-
-// InsertEnc adds a new entry in enc map.
-func (im *InMemo) InsertEnc(key, cipherText string) error {
-
-	im.Lock()
-	defer im.Unlock()
-
-	if len(im.Enc) == 0 {
-		im.Enc = map[string]string{}
+	if len(im.KeyPairs) == 0 {
+		im.KeyPairs = map[string]*repository.KeyPair{}
 	}
 
-	im.Enc[cipherText] = key
-	return nil
-
-}
-
-// FindKeys returns the keys used to encode and decode the message.
-func (im *InMemo) FindKeys() (*repository.Keys, error) {
-
-	for ek, ev := range im.Enc {
-		dv, ok := im.Dec[ek]
-		if ok {
-			return &repository.Keys{
-				Encode: ev,
-				Decode: dv,
-			}, nil
+	if pair, ok := im.KeyPairs[cipherText]; ok {
+		if mode == repository.EncodeMode {
+			pair.EncodeKey = key
+		} else {
+			pair.DecodeKey = key
 		}
+		return pair, true, nil
 	}
 
-	return nil, repository.ErrNotFound
+	newKeyPair := &repository.KeyPair{}
 
+	if mode == repository.EncodeMode {
+		newKeyPair.EncodeKey = key
+	} else {
+		newKeyPair.DecodeKey = key
+	}
+
+	im.KeyPairs[cipherText] = newKeyPair
+
+	return nil, false, nil
 }

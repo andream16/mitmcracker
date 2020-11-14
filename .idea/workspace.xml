@@ -20,12 +20,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ec843235-b15e-4717-9b9c-e96a911d0968" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/input.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/cli/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/input_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/cli/config_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/repository/memory/memory.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/memory/memory.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/repository/memory/memory_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/memory/memory_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/repository/redis/redis.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/repository/redis/redis_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/repository/repository.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/repository.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -70,6 +70,59 @@
       <recent name="$PROJECT_DIR$/internal/cli" />
     </key>
   </component>
+  <component name="RunManager" selected="Go Test.TestInMemo_Insert in github.com/andream16/mitmcracker/internal/repository/memory">
+    <configuration name="TestInMemo_Insert in github.com/andream16/mitmcracker/internal/repository/memory" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="mitmcracker" />
+      <working_directory value="$PROJECT_DIR$/internal/repository/memory" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/andream16/mitmcracker/internal/repository/memory" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <pattern value="^\QTestInMemo_Insert\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestInMemo_Insert/it_should_successfully_find_a_common_ciphertext in github.com/andream16/mitmcracker/internal/repository/memory" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="mitmcracker" />
+      <working_directory value="$PROJECT_DIR$/internal/repository/memory" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/andream16/mitmcracker/internal/repository/memory" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <pattern value="^\QTestInMemo_Insert\E$/^\Qit_should_successfully_find_a_common_ciphertext\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestInput_validate in github.com/andream16/mitmcracker/internal/cli" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="mitmcracker" />
+      <working_directory value="$PROJECT_DIR$/internal/cli" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/andream16/mitmcracker/internal/cli" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <pattern value="^\QTestInput_validate\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test cli" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="mitmcracker" />
+      <working_directory value="$PROJECT_DIR$/internal/cli" />
+      <framework value="gotest" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/andream16/mitmcracker" />
+      <directory value="$PROJECT_DIR$/internal/cli" />
+      <filePath value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.TestInMemo_Insert in github.com/andream16/mitmcracker/internal/repository/memory" />
+        <item itemvalue="Go Test.TestInMemo_Insert/it_should_successfully_find_a_common_ciphertext in github.com/andream16/mitmcracker/internal/repository/memory" />
+        <item itemvalue="Go Test.go test cli" />
+        <item itemvalue="Go Test.TestInput_validate in github.com/andream16/mitmcracker/internal/cli" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
@@ -93,9 +146,32 @@
       <screen x="0" y="833" width="2560" height="1080" />
     </state>
     <state x="922" y="1150" width="777" height="473" key="EditFileWatcherDialog/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605360123703" />
+    <state width="2442" height="222" key="GridCell.Tab.0.bottom" timestamp="1605364349137">
+      <screen x="0" y="833" width="2560" height="1080" />
+    </state>
+    <state width="2442" height="222" key="GridCell.Tab.0.bottom/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364349137" />
+    <state width="2442" height="222" key="GridCell.Tab.0.center" timestamp="1605364349137">
+      <screen x="0" y="833" width="2560" height="1080" />
+    </state>
+    <state width="2442" height="222" key="GridCell.Tab.0.center/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364349137" />
+    <state width="2442" height="222" key="GridCell.Tab.0.left" timestamp="1605364349136">
+      <screen x="0" y="833" width="2560" height="1080" />
+    </state>
+    <state width="2442" height="222" key="GridCell.Tab.0.left/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364349136" />
+    <state width="2442" height="222" key="GridCell.Tab.0.right" timestamp="1605364349137">
+      <screen x="0" y="833" width="2560" height="1080" />
+    </state>
+    <state width="2442" height="222" key="GridCell.Tab.0.right/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364349137" />
     <state x="704" y="1073" width="947" height="737" key="SettingsEditor" timestamp="1605360127102">
       <screen x="0" y="833" width="2560" height="1080" />
     </state>
     <state x="704" y="1073" width="947" height="737" key="SettingsEditor/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605360127102" />
+    <state x="2560" y="328" width="1440" height="1036" maximized="true" key="dock-window-1" timestamp="1605364187950">
+      <screen x="2560" y="0" width="1440" height="2560" />
+    </state>
+    <state x="2560" y="328" width="1440" height="1036" maximized="true" key="dock-window-1/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364187950" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/mitmcracker$go_test_cli.out" NAME="go test cli Coverage Results" MODIFIED="1605362434987" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
   </component>
 </project>

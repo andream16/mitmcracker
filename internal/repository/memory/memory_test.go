@@ -1,95 +1,77 @@
-package memory
+package memory_test
 
 import (
 	"testing"
 
 	"github.com/andream16/mitmcracker/internal/repository"
-	"github.com/pkg/errors"
+	"github.com/andream16/mitmcracker/internal/repository/memory"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestInMemo_InsertDec(t *testing.T) {
+func TestInMemo_Insert(t *testing.T) {
+	t.Run("it should return an error because the mode is not valid", func(t *testing.T) {
+		inMemo := &memory.InMemo{}
+		kp, found, err := inMemo.Insert("", "someMode", "")
+		require.Error(t, err)
+		assert.False(t, found)
+		assert.Nil(t, kp)
+	})
+	t.Run("it should successfully find a common ciphertext", func(t *testing.T) {
+		inMemo := &memory.InMemo{}
 
-	t.Run("successfully add an entry", func(t *testing.T) {
+		const (
+			matchingEncKey     = "matchingEncKey"
+			matchingDecKey     = "matchingDecKey"
+			matchingCipherText = "matchingCiphertext"
+		)
 
-		cipherText := "AUSFBVA"
-		key := "1234"
+		for _, in := range []struct {
+			key           string
+			mode          repository.Mode
+			cipherText    string
+			expectedFound bool
+		}{
+			{
+				key:        "notMatchingEncKey1",
+				mode:       repository.EncodeMode,
+				cipherText: "notMatchingCipherText1",
+			},
+			{
+				key:        "notMatchingEncKey2",
+				mode:       repository.EncodeMode,
+				cipherText: "notMatchingCipherText2",
+			},
+			{
+				key:        matchingDecKey,
+				mode:       repository.DecodeMode,
+				cipherText: matchingCipherText,
+			},
+			{
+				key:        "NotMatchingDecKey4",
+				mode:       repository.DecodeMode,
+				cipherText: "notMatchingCipherText4",
+			},
+			{
+				key:           matchingEncKey,
+				mode:          repository.EncodeMode,
+				cipherText:    matchingCipherText,
+				expectedFound: true,
+			},
+		} {
+			kp, found, err := inMemo.Insert(in.key, in.cipherText, in.mode)
+			require.NoError(t, err)
 
-		m := &InMemo{}
-		m.InsertDec(key, cipherText)
-		v, ok := m.Dec[cipherText]
-		if !ok {
-			t.Fatal("expected true, got false")
-		}
-		if key != v {
-			t.Fatalf("expected %s, got %s", "someInput", v)
+			if in.expectedFound {
+				require.True(t, found)
+				assert.Equal(t, matchingEncKey, kp.EncodeKey)
+				assert.Equal(t, matchingDecKey, kp.DecodeKey)
+				continue
+			}
+
+			assert.False(t, found)
+			assert.Nil(t, kp)
 		}
 	})
-
-}
-
-func TestInMemo_InsertEnc(t *testing.T) {
-
-	t.Run("successfully add an entry", func(t *testing.T) {
-
-		cipherText := "AUSFBVA"
-		key := "1234"
-
-		m := &InMemo{}
-		m.InsertEnc(key, cipherText)
-		v, ok := m.Enc[cipherText]
-		if !ok {
-			t.Fatal("expected true, got false")
-		}
-		if key != v {
-			t.Fatalf("expected %s, got %s", "someInput", v)
-		}
-	})
-
-}
-
-func TestFindKey(t *testing.T) {
-
-	t.Run("should find a common cipherText", func(t *testing.T) {
-
-		cipherText := "AUSFBVA"
-		key := "1234"
-
-		m := &InMemo{}
-		m.InsertEnc(key, cipherText)
-		m.InsertDec(key, cipherText)
-
-		keys, err := m.FindKeys()
-		if err != nil {
-			t.Fatalf("unexpected error %s", err)
-		}
-		if keys == nil {
-			t.Fatal("result is nil")
-		}
-		if key != keys.Encode {
-			t.Fatalf("expected key %s, got %s", key, keys.Encode)
-		}
-		if key != keys.Decode {
-			t.Fatalf("expected key %s, got %s", key, keys.Decode)
-		}
-	})
-
-	t.Run("should not find a common cipherText", func(t *testing.T) {
-
-		cipherText := "AUSFBVA"
-		key := "1234"
-
-		m := &InMemo{}
-		m.InsertEnc(key, cipherText)
-		m.InsertDec(key, "AAAAA")
-
-		k, err := m.FindKeys()
-		if repository.ErrNotFound != errors.Cause(err) {
-			t.Fatalf("expected %s, got %s", repository.ErrNotFound, err)
-		}
-		if k != nil {
-			t.Fatalf("expected an empty string, got %s", k)
-		}
-
-	})
-
 }
