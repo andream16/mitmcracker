@@ -9,7 +9,7 @@ const (
 
 // Inserter represents the repository interface.
 type Inserter interface {
-	Insert(key, mode, cipherText string) (*KeyPair, bool, error)
+	Insert(key, cipherText string, mode Mode) (*KeyPair, bool, error)
 }
 
 // KeyPair is the final result of FindKeys.

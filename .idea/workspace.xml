@@ -21,12 +21,11 @@
   <component name="ChangeListManager">
     <list default="true" id="ec843235-b15e-4717-9b9c-e96a911d0968" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/memory/memory.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/memory/memory.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/memory/memory_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/memory/memory_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/redis/redis.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/redis/redis_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/cracker/cracker.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/repository/repository.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/repository.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,7 +69,7 @@
       <recent name="$PROJECT_DIR$/internal/cli" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestInMemo_Insert in github.com/andream16/mitmcracker/internal/repository/memory">
+  <component name="RunManager" selected="Makefile.all">
     <configuration name="TestInMemo_Insert in github.com/andream16/mitmcracker/internal/repository/memory" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="mitmcracker" />
       <working_directory value="$PROJECT_DIR$/internal/repository/memory" />
@@ -114,8 +113,15 @@
       <filePath value="$PROJECT_DIR$" />
       <method v="2" />
     </configuration>
+    <configuration name="all" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+      <makefile filename="$PROJECT_DIR$/resources/Makefile" target="all" workingDirectory="" arguments="">
+        <envs />
+      </makefile>
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Makefile.all" />
         <item itemvalue="Go Test.TestInMemo_Insert in github.com/andream16/mitmcracker/internal/repository/memory" />
         <item itemvalue="Go Test.TestInMemo_Insert/it_should_successfully_find_a_common_ciphertext in github.com/andream16/mitmcracker/internal/repository/memory" />
         <item itemvalue="Go Test.go test cli" />
@@ -137,6 +143,7 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
@@ -146,22 +153,22 @@
       <screen x="0" y="833" width="2560" height="1080" />
     </state>
     <state x="922" y="1150" width="777" height="473" key="EditFileWatcherDialog/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605360123703" />
-    <state width="2442" height="222" key="GridCell.Tab.0.bottom" timestamp="1605364349137">
+    <state width="2442" height="222" key="GridCell.Tab.0.bottom" timestamp="1605369544443">
       <screen x="0" y="833" width="2560" height="1080" />
     </state>
-    <state width="2442" height="222" key="GridCell.Tab.0.bottom/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364349137" />
-    <state width="2442" height="222" key="GridCell.Tab.0.center" timestamp="1605364349137">
+    <state width="2442" height="222" key="GridCell.Tab.0.bottom/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605369544443" />
+    <state width="2442" height="222" key="GridCell.Tab.0.center" timestamp="1605369544443">
       <screen x="0" y="833" width="2560" height="1080" />
     </state>
-    <state width="2442" height="222" key="GridCell.Tab.0.center/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364349137" />
-    <state width="2442" height="222" key="GridCell.Tab.0.left" timestamp="1605364349136">
+    <state width="2442" height="222" key="GridCell.Tab.0.center/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605369544443" />
+    <state width="2442" height="222" key="GridCell.Tab.0.left" timestamp="1605369544443">
       <screen x="0" y="833" width="2560" height="1080" />
     </state>
-    <state width="2442" height="222" key="GridCell.Tab.0.left/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364349136" />
-    <state width="2442" height="222" key="GridCell.Tab.0.right" timestamp="1605364349137">
+    <state width="2442" height="222" key="GridCell.Tab.0.left/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605369544443" />
+    <state width="2442" height="222" key="GridCell.Tab.0.right" timestamp="1605369544443">
       <screen x="0" y="833" width="2560" height="1080" />
     </state>
-    <state width="2442" height="222" key="GridCell.Tab.0.right/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364349137" />
+    <state width="2442" height="222" key="GridCell.Tab.0.right/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605369544443" />
     <state x="704" y="1073" width="947" height="737" key="SettingsEditor" timestamp="1605360127102">
       <screen x="0" y="833" width="2560" height="1080" />
     </state>
@@ -170,6 +177,10 @@
       <screen x="2560" y="0" width="1440" height="2560" />
     </state>
     <state x="2560" y="328" width="1440" height="1036" maximized="true" key="dock-window-1/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605364187950" />
+    <state x="2560" y="397" width="1440" height="1036" maximized="true" key="dock-window-2" timestamp="1605365835395">
+      <screen x="2560" y="0" width="1440" height="2560" />
+    </state>
+    <state x="2560" y="397" width="1440" height="1036" maximized="true" key="dock-window-2/2560.0.1440.2560/0.833.2560.1080@0.833.2560.1080" timestamp="1605365835395" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/mitmcracker$go_test_cli.out" NAME="go test cli Coverage Results" MODIFIED="1605362434987" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
