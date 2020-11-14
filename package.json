@@ -20,9 +20,9 @@
     "url": "https://github.com/andream16/mitmcracker/issues"
   },
   "homepage": "https://github.com/andream16/mitmcracker#readme",
-    "husky": {
-      "hooks": {
-        "pre-commit": "make test-integration-cleanup && golint ./..."
-      }
+  "husky": {
+    "hooks": {
+      "pre-commit": "make test-integration-cleanup && golint ./..."
     }
+  }
 }
