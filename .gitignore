@@ -1,9 +1,6 @@
 vendor/
 .vscode/
-mitmcracker
-resources/*.cmi
-resources/*.cmx
-resources/*.o
-resources/encrypt
-resources/decrypt
+.idea/
+resources/
 node_modules/
+mitmcracker

@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/andream16/mitmcracker/internal/keycalculator"
-
+	"github.com/andream16/mitmcracker/internal/cli"
+	"github.com/andream16/mitmcracker/internal/cracker"
 	"github.com/andream16/mitmcracker/internal/decrypter"
 	"github.com/andream16/mitmcracker/internal/encrypter"
 	"github.com/andream16/mitmcracker/internal/formatter"
-
-	"github.com/andream16/mitmcracker/internal/cli"
-	"github.com/andream16/mitmcracker/internal/cracker"
+	"github.com/andream16/mitmcracker/internal/keycalculator"
 	"github.com/andream16/mitmcracker/internal/repository/memory"
 )
 
