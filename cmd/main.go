@@ -5,6 +5,12 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/andream16/mitmcracker/internal/keycalculator"
+
+	"github.com/andream16/mitmcracker/internal/decrypter"
+	"github.com/andream16/mitmcracker/internal/encrypter"
+	"github.com/andream16/mitmcracker/internal/formatter"
+
 	"github.com/andream16/mitmcracker/internal/cli"
 	"github.com/andream16/mitmcracker/internal/cracker"
 	"github.com/andream16/mitmcracker/internal/repository/memory"
@@ -26,9 +32,13 @@ func main() {
 
 	cr, err := cracker.New(
 		conf.KeyLength,
-		&memory.InMemo{},
-		conf.PlainText,
 		conf.EncText,
+		conf.PlainText,
+		&memory.InMemo{},
+		encrypter.DefaultEncrypt,
+		decrypter.DefaultDecrypt,
+		formatter.DefaultFormatter,
+		keycalculator.DefaultCalculate,
 	)
 	if err != nil {
 		log.Fatalf("could not initialise cracker: %v", err)

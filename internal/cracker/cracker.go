@@ -3,11 +3,16 @@ package cracker
 import (
 	"fmt"
 	"log"
-	"os/exec"
 	"runtime"
 	"sync"
 	"time"
 
+	"github.com/andream16/mitmcracker/internal/keycalculator"
+	"gopkg.in/cheggaaa/pb.v1"
+
+	"github.com/andream16/mitmcracker/internal/decrypter"
+	"github.com/andream16/mitmcracker/internal/encrypter"
+	"github.com/andream16/mitmcracker/internal/formatter"
 	"github.com/andream16/mitmcracker/internal/repository"
 )
 
@@ -24,9 +29,13 @@ type Cracker struct {
 	keyNum        int
 	keyLength     uint
 	goRoutinesNum int
-	inserter      repository.Inserter
 	plainText     string
 	cipherText    string
+	inserter      repository.Inserter
+	encFn         encrypter.Encrypter
+	decFn         decrypter.Decrypter
+	formatterFn   formatter.Formatter
+	keyCalcFn     keycalculator.KeyCalculator
 }
 
 type task struct {
@@ -37,8 +46,17 @@ type task struct {
 }
 
 // New returns a new cracker tuned for a particular system capacity & key length.
-func New(keyLength uint, inserter repository.Inserter, plainText, cipherText string) (*Cracker, error) {
-	keyNum, err := getKeyNumber(keyLength)
+func New(
+	keyLength uint,
+	cipherText string,
+	plainText string,
+	inserter repository.Inserter,
+	encFn encrypter.Encrypter,
+	decFn decrypter.Decrypter,
+	formatterFn formatter.Formatter,
+	keyCalcFn keycalculator.KeyCalculator,
+) (*Cracker, error) {
+	keyNum, err := keyCalcFn(keyLength)
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +68,10 @@ func New(keyLength uint, inserter repository.Inserter, plainText, cipherText str
 		inserter:      inserter,
 		plainText:     plainText,
 		cipherText:    cipherText,
+		encFn:         encFn,
+		decFn:         decFn,
+		formatterFn:   formatterFn,
+		keyCalcFn:     keyCalcFn,
 	}, nil
 }
 
@@ -57,96 +79,96 @@ func New(keyLength uint, inserter repository.Inserter, plainText, cipherText str
 func (c *Cracker) Crack() (*KeyPair, bool, error) {
 
 	var (
-		taskNum int
-		tasks   = make(chan task, c.keyNum)
+		taskCtr int
+		tasks   = make(chan task)
+		taskBar = pb.StartNew(c.keyNum * 2)
 		wg      sync.WaitGroup
-		keyPair *KeyPair
+		keyPair KeyPair
 		found   bool
 	)
 
 	go func() {
 		for {
 			time.Sleep(5 * time.Second)
-			log.Println(
-				fmt.Sprintf(
-					"%d tasks out of %d.",
-					taskNum,
-					c.keyNum*2,
-				),
-			)
+			taskBar.Set(taskCtr)
 		}
 	}()
 
-	wg.Add(c.goRoutinesNum)
-
 	for i := 0; i <= c.goRoutinesNum; i++ {
-		go func(i int, inFound *bool, inKp *KeyPair, wg *sync.WaitGroup) {
+		go func(i int, refFound *bool, refKp *KeyPair, refTaskCounter *int, wg *sync.WaitGroup) {
+			wg.Add(1)
+			defer wg.Done()
 			for task := range tasks {
-				taskNum++
-				defer wg.Done()
+				*refTaskCounter++
 
 				cipherText, err := task.fn(task.key, task.text)
 				if err != nil {
-					log.Println(fmt.Sprintf("unexpected error while processing task %d: %v", taskNum, err))
+					log.Println(
+						fmt.Sprintf(
+							"unexpected error while processing task %d: %v",
+							refTaskCounter,
+							err,
+						),
+					)
 					continue
 				}
 
-				kp, found, err := c.inserter.Insert(task.key, cipherText, repository.Mode(task.mode))
+				//log.Println(
+				//	fmt.Sprintf(
+				//		"run %s with key %s on text %s. Got common ciphertext %s",
+				//		task.mode,
+				//		task.key,
+				//		task.text,
+				//		cipherText,
+				//	),
+				//)
+
+				kp, wasFound, err := c.inserter.Insert(task.key, cipherText, repository.Mode(task.mode))
 				if err != nil {
-					log.Println(fmt.Sprintf("unexpected error while inserting key for task %d: %v", taskNum, err))
+					log.Println(
+						fmt.Sprintf(
+							"unexpected error while inserting key for task %d: %v",
+							refTaskCounter,
+							err,
+						),
+					)
 					continue
 				}
 
-				if found {
-					inFound = &found
-					inKp = &KeyPair{
+				if wasFound {
+					*refFound = true
+					*refKp = KeyPair{
 						EncodeKey: kp.EncodeKey,
 						DecodeKey: kp.DecodeKey,
 					}
 				}
 			}
-		}(i, &found, keyPair, &wg)
+		}(i, &found, &keyPair, &taskCtr, &wg)
 	}
 
-	for k := 0; k <= c.keyNum; k++ {
+	for k := 0; k < c.keyNum; k++ {
 		if found {
-			return keyPair, true, nil
+			return &keyPair, true, nil
 		}
-		fK := formatKey(k, c.keyLength)
+		fK := c.formatterFn(k, c.keyLength)
 		tasks <- task{
 			key:  fK,
 			text: c.plainText,
 			mode: encodeMode,
-			fn:   encode,
+			fn:   c.encFn,
 		}
 		tasks <- task{
 			key:  fK,
 			text: c.cipherText,
 			mode: decodeMode,
-			fn:   decode,
+			fn:   c.decFn,
 		}
 	}
 
 	close(tasks)
 	wg.Wait()
 
-	return nil, false, nil
-}
-
-func encode(key, plainText string) (string, error) {
-	out, err := exec.Command("./resources/encrypt", "-s", key, plainText).Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
-}
-
-func decode(key, cipherText string) (string, error) {
-	out, err := exec.Command("./resources/decrypt", "-s", key, cipherText).Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
+	return &keyPair, found, nil
 }
 
 func getMaxConcurrency() int {
@@ -156,28 +178,4 @@ func getMaxConcurrency() int {
 		return maxProcs
 	}
 	return numCPU
-}
-
-func getKeyNumber(keyLength uint) (int, error) {
-	if l, ok := map[uint]int{
-		24: 16777216,
-		28: 268435456,
-		32: 4294967296,
-	}[keyLength]; ok {
-		return l, nil
-	}
-	return 0, fmt.Errorf("unexpected key length %d. Valid key legths are 24, 28 and 32 bits", keyLength)
-}
-
-func formatKey(key int, keyLength uint) string {
-	var s string
-	switch keyLength {
-	case 24:
-		s = "%06x"
-	case 28:
-		s = "%07x"
-	case 32:
-		s = "%08x"
-	}
-	return fmt.Sprintf(s, key)
 }
