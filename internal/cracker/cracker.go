@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/andream16/mitmcracker/internal/decrypter"
 	"github.com/andream16/mitmcracker/internal/encrypter"
@@ -81,14 +80,15 @@ func New(
 // Crack returns the matching key pair. False is returned when the pair is not found.
 func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 
+	// 3 go routines are reserved for: waiting for a result, producing and waiting for the other go routines.
+	const reservedGoRoutinesNum = 3
+
 	var (
-		taskCtr     int
-		tasks       = make(chan task)
-		result      = make(chan KeyPair, 1)
-		taskCtrChan = make(chan struct{})
-		taskBar     = pb.StartNew(c.keyNum * 2)
-		keyPair     KeyPair
-		found       bool
+		tasks   = make(chan task, c.goRoutinesNum-reservedGoRoutinesNum)
+		result  = make(chan KeyPair, 1)
+		taskBar = pb.StartNew(c.keyNum * 2)
+		keyPair KeyPair
+		found   bool
 	)
 
 	defer taskBar.Finish()
@@ -96,19 +96,15 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	g, ctx := errgroup.WithContext(ctx)
 
-	go func() {
-		for {
-			time.Sleep(5 * time.Second)
-			taskBar.Set(taskCtr)
-		}
-	}()
-
-	// insight on progress
+	// result
 	g.Go(func() error {
 		for {
 			select {
-			case <-taskCtrChan:
-				taskCtr++
+			case r := <-result:
+				found = true
+				keyPair = r
+				cancel()
+				return nil
 			case <-ctx.Done():
 				return ctx.Err()
 			default:
@@ -117,27 +113,13 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 		}
 	})
 
-	// check for task progress and end
-	g.Go(func() error {
-		for {
-			select {
-			case r := <-result:
-				found = true
-				keyPair = r
-				cancel()
-				break
-			}
-			return nil
-		}
-	})
-
-	// consume
-	for i := 0; i < c.goRoutinesNum; i++ {
+	// consumer
+	for i := 0; i < c.goRoutinesNum-reservedGoRoutinesNum; i++ {
 		g.Go(func() error {
 			for {
 				select {
 				case t := <-tasks:
-					taskCtrChan <- struct{}{}
+					taskBar.Add64(1)
 
 					kp, wasFound, err := c.handleTask(t)
 					if err != nil {
@@ -156,21 +138,21 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 		})
 	}
 
-	// produce
+	// producer
 	g.Go(func() error {
 		for k := 0; k < c.keyNum; k++ {
-			fK := c.formatterFn(k, c.keyLength)
+			fk := c.formatterFn(k, c.keyLength)
 			tasks <- task{
-				key:  fK,
-				text: c.plainText,
-				mode: encodeMode,
-				fn:   c.encFn,
-			}
-			tasks <- task{
-				key:  fK,
+				key:  fk,
 				text: c.cipherText,
 				mode: decodeMode,
 				fn:   c.decFn,
+			}
+			tasks <- task{
+				key:  fk,
+				text: c.plainText,
+				mode: encodeMode,
+				fn:   c.encFn,
 			}
 
 			select {
@@ -180,7 +162,6 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 				break
 			}
 		}
-
 		return nil
 	})
 
@@ -190,7 +171,6 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 
 	close(tasks)
 	close(result)
-	close(taskCtrChan)
 
 	return &keyPair, found, nil
 }
