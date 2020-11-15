@@ -1,50 +1,58 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
 	"log"
 
-	"github.com/andream16/mitmcracker"
+	"github.com/andream16/mitmcracker/internal/cli"
 	"github.com/andream16/mitmcracker/internal/cracker"
-	"github.com/andream16/mitmcracker/internal/repository"
+	"github.com/andream16/mitmcracker/internal/decrypter"
+	"github.com/andream16/mitmcracker/internal/encrypter"
+	"github.com/andream16/mitmcracker/internal/formatter"
+	"github.com/andream16/mitmcracker/internal/keycalculator"
+	"github.com/andream16/mitmcracker/internal/perf"
 	"github.com/andream16/mitmcracker/internal/repository/memory"
-	"github.com/andream16/mitmcracker/internal/repository/redis"
 )
 
 func main() {
 
-	in, err := mitmcracker.New()
-	if err != nil {
+	var conf cli.Config
+
+	flag.UintVar(&conf.KeyLength, "key", 0, "key length")
+	flag.StringVar(&conf.PlainText, "plain", "", "known plain text")
+	flag.StringVar(&conf.EncText, "encoded", "", "known encoded text")
+
+	flag.Parse()
+
+	if err := conf.Validate(); err != nil {
 		log.Fatal(err)
 	}
 
-	repo, err := newRepository(in)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	cracker := cracker.New(
-		in.PlainText,
-		in.EncText,
-		in.KeyLength,
-		repo,
+	cr, err := cracker.New(
+		conf.KeyLength,
+		conf.EncText,
+		conf.PlainText,
+		&memory.InMemo{},
+		encrypter.DefaultEncrypt,
+		decrypter.DefaultDecrypt,
+		formatter.DefaultFormatter,
+		keycalculator.DefaultCalculate,
+		perf.DefaultMaxGoRoutineNumber,
 	)
-
-	keys, err := cracker.Crack()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("could not initialise cracker: %v", err)
 	}
 
-	fmt.Println(fmt.Sprintf("found encoding key: %s & decoding key: %s", keys.Encode, keys.Decode))
-
-}
-
-func newRepository(in *mitmcracker.Input) (repository.Repositorer, error) {
-
-	if in.Storage.Type == "disk" {
-		return redis.New(in.Storage.Address, in.Storage.Password, in.Storage.DB)
+	keyPair, found, err := cr.Crack(context.Background())
+	if err != nil {
+		log.Fatalf("fatal error while finding the matching keys: %v", err)
 	}
 
-	return memory.New(cracker.GetKeyNumber(in.KeyLength)), nil
+	if !found {
+		log.Fatal("matching keys not found")
+	}
 
+	log.Println(fmt.Sprintf("found encoding key: %s & decoding key: %s", keyPair.EncodeKey, keyPair.DecodeKey))
 }

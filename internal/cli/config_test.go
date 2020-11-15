@@ -1,64 +1,72 @@
-package mitmcracker
+package cli_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/andream16/mitmcracker/internal/cli"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestInput_validate(t *testing.T) {
 	t.Run("should fail because key length is not supported", func(t *testing.T) {
-		i := &Input{}
-		err := i.validate()
-		if errInvalidField != errors.Cause(err) {
-			t.Fatalf("expected %s, got %v", errInvalidField, err)
-		}
+		conf := &cli.Config{}
+		err := conf.Validate()
+		require.Error(t, err)
+
+		var e cli.InvalidInputFlagError
+		require.True(t, errors.As(err, &e))
 	})
 	t.Run("should fail because key length is invalig", func(t *testing.T) {
-		i := &Input{
+		conf := &cli.Config{
 			KeyLength: 10,
 		}
-		err := i.validate()
-		if errInvalidField != errors.Cause(err) {
-			t.Fatalf("expected %s, got %v", errInvalidField, err)
-		}
+		err := conf.Validate()
+		require.Error(t, err)
+
+		var e cli.InvalidInputFlagError
+		require.True(t, errors.As(err, &e))
 	})
 	t.Run("should fail because known encrypted text is empty", func(t *testing.T) {
-		i := &Input{
+		conf := &cli.Config{
 			KeyLength: 24,
 		}
-		err := i.validate()
-		if errInvalidField != errors.Cause(err) {
-			t.Fatalf("expected %s, got %v", errInvalidField, err)
-		}
+		err := conf.Validate()
+		require.Error(t, err)
+
+		var e cli.InvalidInputFlagError
+		require.True(t, errors.As(err, &e))
 	})
 	t.Run("should fail because known plain text is empty", func(t *testing.T) {
-		i := &Input{
+		conf := &cli.Config{
 			KeyLength: 28,
 			EncText:   "someEncryptedText",
 		}
-		err := i.validate()
-		if errInvalidField != errors.Cause(err) {
-			t.Fatalf("expected %s, got %v", errInvalidField, err)
-		}
+		err := conf.Validate()
+		require.Error(t, err)
+
+		var e cli.InvalidInputFlagError
+		require.True(t, errors.As(err, &e))
 	})
 	t.Run("should fail because storage is not supported", func(t *testing.T) {
-		i := &Input{
+		conf := &cli.Config{
 			KeyLength: 28,
 			EncText:   "someEncryptedText",
 			PlainText: "somePlainText",
-			Storage: &Storage{
+			Storage: &cli.Storage{
 				Type: "xyz",
 			},
 		}
-		err := i.validate()
-		if errInvalidField != errors.Cause(err) {
-			t.Fatalf("expected %s, got %v", errInvalidField, err)
-		}
+		err := conf.Validate()
+		require.Error(t, err)
+
+		var e cli.InvalidInputFlagError
+		require.True(t, errors.As(err, &e))
 	})
 	t.Run("should successfully validate some inputs", func(t *testing.T) {
-		testCases := []*Input{
+		testCases := []*cli.Config{
 			{
 				KeyLength: 24,
 				EncText:   "someEncryptedText",
@@ -79,10 +87,7 @@ func TestInput_validate(t *testing.T) {
 			testCase := testCase
 			t.Run(fmt.Sprintf("testcase n %d", idx), func(t *testing.T) {
 				t.Parallel()
-				err := testCase.validate()
-				if err != nil {
-					t.Fatalf("unexpected error %s", err)
-				}
+				require.NoError(t, testCase.Validate())
 			})
 		}
 	})
