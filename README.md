@@ -10,17 +10,19 @@ It tries all the possible keys in the range of `24/28/32 bits` and prints which 
 
 Keys can only be `6/7/8 Digits HEX` and `Cipher/Plain` can only be `16 Digits HEX`.
 
-This cracker is written in `Golang` since I need to run both `Encryption` and `Decryption` in parallel and `goroutines` made it easy.
-
 ## What you need to run the project:
 
-- Go: v1.15
+- Go: ~v1.15
+- Ocaml: ~v4.08.1
 
 ## How to run the app
 
-You can run `encryption` using: `./encrypt -s key cipherText` and `decryption` using `./decrypt -s key plainText`.
+From the root of the project:
 
-Plain/Cipher couples to be used to test the application:
+- build the go/ocaml binaries: `make`
+- run the command: `./mitmcracker -key=$keyLength -encoded=$encodedMsg -plain=$plainMsg`
+
+## Known Inputs/Outputs
 
 - 24-bit:
     - plain: C330C9CBD01DFBA0

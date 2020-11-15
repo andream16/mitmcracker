@@ -14,12 +14,6 @@ keys, but accepts shorter keys by extending them with zeros. Example:
 
 	- Key: ABCABC (24-bit) --- becomes ---> 00ABCABC (32-bit)
 
-The decrypt program works similar to the encrypt one. You can compile the project
-running the following commands in your unix-like shell:
-
-	$ make clean
-	$ make
-
 *******************************************************************************
 IMPORTANT: this is a special-purpose version of this software, in which ONLY
 16-length hexadecimal inputs are allowed (64-bit blocks). 
