@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"github.com/andream16/mitmcracker/internal/encrypter"
 	"github.com/andream16/mitmcracker/internal/formatter"
 	"github.com/andream16/mitmcracker/internal/keycalculator"
+	"github.com/andream16/mitmcracker/internal/perf"
 	"github.com/andream16/mitmcracker/internal/repository/memory"
 )
 
@@ -37,12 +39,13 @@ func main() {
 		decrypter.DefaultDecrypt,
 		formatter.DefaultFormatter,
 		keycalculator.DefaultCalculate,
+		perf.DefaultMaxGoRoutineNumber,
 	)
 	if err != nil {
 		log.Fatalf("could not initialise cracker: %v", err)
 	}
 
-	keyPair, found, err := cr.Crack()
+	keyPair, found, err := cr.Crack(context.Background())
 	if err != nil {
 		log.Fatalf("fatal error while finding the matching keys: %v", err)
 	}

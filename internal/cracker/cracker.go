@@ -1,19 +1,21 @@
 package cracker
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
-	"runtime"
-	"sync"
 	"time"
-
-	"github.com/andream16/mitmcracker/internal/keycalculator"
-	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/andream16/mitmcracker/internal/decrypter"
 	"github.com/andream16/mitmcracker/internal/encrypter"
 	"github.com/andream16/mitmcracker/internal/formatter"
+	"github.com/andream16/mitmcracker/internal/keycalculator"
+	"github.com/andream16/mitmcracker/internal/perf"
 	"github.com/andream16/mitmcracker/internal/repository"
+
+	"golang.org/x/sync/errgroup"
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 const (
@@ -55,6 +57,7 @@ func New(
 	decFn decrypter.Decrypter,
 	formatterFn formatter.Formatter,
 	keyCalcFn keycalculator.KeyCalculator,
+	perfNumGoRoutines perf.MaxGoRoutineNumber,
 ) (*Cracker, error) {
 	keyNum, err := keyCalcFn(keyLength)
 	if err != nil {
@@ -64,7 +67,7 @@ func New(
 	return &Cracker{
 		keyNum:        keyNum,
 		keyLength:     keyLength,
-		goRoutinesNum: getMaxConcurrency(),
+		goRoutinesNum: perfNumGoRoutines(),
 		inserter:      inserter,
 		plainText:     plainText,
 		cipherText:    cipherText,
@@ -76,16 +79,22 @@ func New(
 }
 
 // Crack returns the matching key pair. False is returned when the pair is not found.
-func (c *Cracker) Crack() (*KeyPair, bool, error) {
+func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 
 	var (
-		taskCtr int
-		tasks   = make(chan task)
-		taskBar = pb.StartNew(c.keyNum * 2)
-		wg      sync.WaitGroup
-		keyPair KeyPair
-		found   bool
+		taskCtr     int
+		tasks       = make(chan task)
+		result      = make(chan KeyPair, 1)
+		taskCtrChan = make(chan struct{})
+		taskBar     = pb.StartNew(c.keyNum * 2)
+		keyPair     KeyPair
+		found       bool
 	)
+
+	defer taskBar.Finish()
+
+	ctx, cancel := context.WithCancel(ctx)
+	g, ctx := errgroup.WithContext(ctx)
 
 	go func() {
 		for {
@@ -94,88 +103,117 @@ func (c *Cracker) Crack() (*KeyPair, bool, error) {
 		}
 	}()
 
-	for i := 0; i <= c.goRoutinesNum; i++ {
-		go func(i int, refFound *bool, refKp *KeyPair, refTaskCounter *int, wg *sync.WaitGroup) {
-			wg.Add(1)
-			defer wg.Done()
-			for task := range tasks {
-				*refTaskCounter++
+	// insight on progress
+	g.Go(func() error {
+		for {
+			select {
+			case <-taskCtrChan:
+				taskCtr++
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				break
+			}
+		}
+	})
 
-				cipherText, err := task.fn(task.key, task.text)
-				if err != nil {
-					log.Println(
-						fmt.Sprintf(
-							"unexpected error while processing task %d: %v",
-							refTaskCounter,
-							err,
-						),
-					)
-					continue
-				}
+	// check for task progress and end
+	g.Go(func() error {
+		for {
+			select {
+			case r := <-result:
+				found = true
+				keyPair = r
+				cancel()
+				break
+			}
+			return nil
+		}
+	})
 
-				//log.Println(
-				//	fmt.Sprintf(
-				//		"run %s with key %s on text %s. Got common ciphertext %s",
-				//		task.mode,
-				//		task.key,
-				//		task.text,
-				//		cipherText,
-				//	),
-				//)
+	// consume
+	for i := 0; i < c.goRoutinesNum; i++ {
+		g.Go(func() error {
+			for {
+				select {
+				case t := <-tasks:
+					taskCtrChan <- struct{}{}
 
-				kp, wasFound, err := c.inserter.Insert(task.key, cipherText, repository.Mode(task.mode))
-				if err != nil {
-					log.Println(
-						fmt.Sprintf(
-							"unexpected error while inserting key for task %d: %v",
-							refTaskCounter,
-							err,
-						),
-					)
-					continue
-				}
-
-				if wasFound {
-					*refFound = true
-					*refKp = KeyPair{
-						EncodeKey: kp.EncodeKey,
-						DecodeKey: kp.DecodeKey,
+					kp, wasFound, err := c.handleTask(t)
+					if err != nil {
+						log.Println(fmt.Sprintf("error while processing task %v", err))
+						break
 					}
+					if wasFound {
+						result <- kp
+					}
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+					break
 				}
 			}
-		}(i, &found, &keyPair, &taskCtr, &wg)
+		})
 	}
 
-	for k := 0; k < c.keyNum; k++ {
-		if found {
-			return &keyPair, true, nil
+	// produce
+	g.Go(func() error {
+		for k := 0; k < c.keyNum; k++ {
+			fK := c.formatterFn(k, c.keyLength)
+			tasks <- task{
+				key:  fK,
+				text: c.plainText,
+				mode: encodeMode,
+				fn:   c.encFn,
+			}
+			tasks <- task{
+				key:  fK,
+				text: c.cipherText,
+				mode: decodeMode,
+				fn:   c.decFn,
+			}
+
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				break
+			}
 		}
-		fK := c.formatterFn(k, c.keyLength)
-		tasks <- task{
-			key:  fK,
-			text: c.plainText,
-			mode: encodeMode,
-			fn:   c.encFn,
-		}
-		tasks <- task{
-			key:  fK,
-			text: c.cipherText,
-			mode: decodeMode,
-			fn:   c.decFn,
-		}
+
+		return nil
+	})
+
+	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
+		return nil, false, err
 	}
 
 	close(tasks)
-	wg.Wait()
+	close(result)
+	close(taskCtrChan)
 
 	return &keyPair, found, nil
 }
 
-func getMaxConcurrency() int {
-	maxProcs := runtime.GOMAXPROCS(0)
-	numCPU := runtime.NumCPU()
-	if maxProcs < numCPU {
-		return maxProcs
+func (c *Cracker) handleTask(t task) (KeyPair, bool, error) {
+	var res KeyPair
+
+	cipherText, err := t.fn(t.key, t.text)
+	if err != nil {
+		return res, false, err
 	}
-	return numCPU
+
+	kp, wasFound, err := c.inserter.Insert(t.key, cipherText, repository.Mode(t.mode))
+	if err != nil {
+		return res, false, err
+	}
+
+	if kp != nil && kp.DecodeKey != "" && kp.EncodeKey != "" {
+		res = KeyPair{
+			EncodeKey: kp.EncodeKey,
+			DecodeKey: kp.DecodeKey,
+		}
+	}
+
+	return res, wasFound, err
 }
