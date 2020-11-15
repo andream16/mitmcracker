@@ -1,4 +1,8 @@
-default: build
+default: all
+
+all:
+	make test
+	make build
 
 build:
 	@'rm' ./resources/*.cmo ./resources/*.cmi ./resources/*.cmx ./resources/*.o ./resources/encrypt ./resources/decrypt 2>/dev/null || true
