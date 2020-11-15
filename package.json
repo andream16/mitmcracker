@@ -19,5 +19,10 @@
   "bugs": {
     "url": "https://github.com/andream16/mitmcracker/issues"
   },
-  "homepage": "https://github.com/andream16/mitmcracker#readme"
+  "homepage": "https://github.com/andream16/mitmcracker#readme",
+  "husky": {
+    "hooks": {
+      "pre-commit": "make test"
+    }
+  }
 }
