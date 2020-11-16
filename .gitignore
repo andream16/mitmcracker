@@ -4,3 +4,4 @@ vendor/
 resources/
 node_modules/
 mitmcracker
+*.pprof

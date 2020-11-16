@@ -1,7 +1,5 @@
 package repository
 
-import "fmt"
-
 const (
 	EncodeMode Mode = "encode"
 	DecodeMode Mode = "decode"
@@ -20,14 +18,3 @@ type KeyPair struct {
 
 // Mode represents the operation mode.
 type Mode string
-
-// Validate validates the mode.
-func (m Mode) Validate() error {
-	if _, ok := map[Mode]struct{}{
-		EncodeMode: {},
-		DecodeMode: {},
-	}[m]; !ok {
-		return fmt.Errorf("invalid mode %s. Should be either %s or %s", m, EncodeMode, DecodeMode)
-	}
-	return nil
-}

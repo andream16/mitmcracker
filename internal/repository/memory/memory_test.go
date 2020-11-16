@@ -11,13 +11,6 @@ import (
 )
 
 func TestInMemo_Insert(t *testing.T) {
-	t.Run("it should return an error because the mode is not valid", func(t *testing.T) {
-		inMemo := &memory.InMemo{}
-		kp, found, err := inMemo.Insert("", "someMode", "")
-		require.Error(t, err)
-		assert.False(t, found)
-		assert.Nil(t, kp)
-	})
 	t.Run("it should successfully find a common ciphertext", func(t *testing.T) {
 		inMemo := &memory.InMemo{}
 

@@ -98,19 +98,13 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 
 	// result
 	g.Go(func() error {
-		for {
-			select {
-			case r := <-result:
-				found = true
-				keyPair = r
-				cancel()
-				return nil
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				break
-			}
+		for r := range result {
+			found = true
+			keyPair = r
+			cancel()
+			break
 		}
+		return nil
 	})
 
 	// consumer
@@ -153,13 +147,6 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 				text: c.plainText,
 				mode: encodeMode,
 				fn:   c.encFn,
-			}
-
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				break
 			}
 		}
 		return nil

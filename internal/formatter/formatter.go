@@ -1,6 +1,9 @@
 package formatter
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // Formatter formats a given key based on the key length.
 type Formatter func(key int, keyLength uint) string
@@ -17,4 +20,23 @@ func DefaultFormatter(key int, keyLength uint) string {
 		s = "%08x"
 	}
 	return fmt.Sprintf(s, key)
+}
+
+// FastFormatter >> fast.
+func FastFormatter(key int, keyLength uint) string {
+	var kL int
+	switch keyLength {
+	case 24:
+		kL = 6
+	case 28:
+		kL = 7
+	case 32:
+		kL = 8
+	}
+	s := strconv.AppendUint(
+		[]byte{'0', '0', '0', '0', '0', '0', '0'},
+		uint64(key),
+		16,
+	)
+	return string(s[len(s)-kL:])
 }

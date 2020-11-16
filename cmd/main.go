@@ -37,7 +37,7 @@ func main() {
 		&memory.InMemo{},
 		encrypter.DefaultEncrypt,
 		decrypter.DefaultDecrypt,
-		formatter.DefaultFormatter,
+		formatter.FastFormatter,
 		keycalculator.DefaultCalculate,
 		perf.DefaultMaxGoRoutineNumber,
 	)

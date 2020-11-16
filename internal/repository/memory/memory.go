@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/andream16/mitmcracker/internal/repository"
@@ -8,25 +9,16 @@ import (
 
 // InMemo represents an in-memory map.
 type InMemo struct {
-	sync.Mutex
-
-	KeyPairs map[string]*repository.KeyPair
+	KeyPairs sync.Map
 }
 
 // Insert
 func (im *InMemo) Insert(key, cipherText string, mode repository.Mode) (*repository.KeyPair, bool, error) {
-	im.Lock()
-	defer im.Unlock()
-
-	if err := mode.Validate(); err != nil {
-		return nil, false, err
-	}
-
-	if len(im.KeyPairs) == 0 {
-		im.KeyPairs = map[string]*repository.KeyPair{}
-	}
-
-	if pair, ok := im.KeyPairs[cipherText]; ok {
+	if p, ok := im.KeyPairs.Load(cipherText); ok {
+		pair, ok := p.(*repository.KeyPair)
+		if ! ok {
+			return nil, false, errors.New("could not convert found pair to *repository.KeyPain")
+		}
 		if mode == repository.EncodeMode {
 			pair.EncodeKey = key
 		} else {
@@ -43,7 +35,7 @@ func (im *InMemo) Insert(key, cipherText string, mode repository.Mode) (*reposit
 		newKeyPair.DecodeKey = key
 	}
 
-	im.KeyPairs[cipherText] = newKeyPair
+	im.KeyPairs.Store(cipherText, newKeyPair)
 
 	return nil, false, nil
 }
