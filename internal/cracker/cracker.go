@@ -146,7 +146,7 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 	})
 
 	// consumer
-	for i := 0; i < c.goRoutinesNum-reservedGoRoutinesNum/2; i++ {
+	for i := 0; i < c.goRoutinesNum-reservedGoRoutinesNum; i++ {
 		g.Go(func() error {
 			for {
 				select {
