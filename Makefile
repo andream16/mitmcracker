@@ -11,4 +11,4 @@ build:
 	CGO_ENABLED=0 GO111MODULE=on go build -ldflags "-s -w" -o mitmcracker cmd/main.go
 
 test:
-	go test ./... -count=10 -race
+	go test ./... -count=1 -race

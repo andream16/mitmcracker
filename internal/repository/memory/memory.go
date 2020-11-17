@@ -1,30 +1,23 @@
 package memory
 
 import (
-	"errors"
-	"sync"
-
 	"github.com/andream16/mitmcracker/internal/repository"
 )
 
 // InMemo represents an in-memory map.
 type InMemo struct {
-	KeyPairs sync.Map
+	KeyPairs map[string]*repository.KeyPair
 }
 
 // Insert
-func (im *InMemo) Insert(key, cipherText string, mode repository.Mode) (*repository.KeyPair, bool, error) {
-	if p, ok := im.KeyPairs.Load(cipherText); ok {
-		pair, ok := p.(*repository.KeyPair)
-		if ! ok {
-			return nil, false, errors.New("could not convert found pair to *repository.KeyPain")
-		}
+func (im *InMemo) Insert(key, cipherText, mode string) (*repository.KeyPair, bool, error) {
+	if p, ok := im.KeyPairs[cipherText]; ok {
 		if mode == repository.EncodeMode {
-			pair.EncodeKey = key
+			p.EncodeKey = key
 		} else {
-			pair.DecodeKey = key
+			p.DecodeKey = key
 		}
-		return pair, true, nil
+		return p, true, nil
 	}
 
 	newKeyPair := &repository.KeyPair{}
@@ -35,7 +28,32 @@ func (im *InMemo) Insert(key, cipherText string, mode repository.Mode) (*reposit
 		newKeyPair.DecodeKey = key
 	}
 
-	im.KeyPairs.Store(cipherText, newKeyPair)
+	im.KeyPairs[cipherText] = newKeyPair
+
+	return nil, false, nil
+}
+
+func (im *InMemo) InsertBulk(reqs ...repository.InsertBulkRequest) (*repository.KeyPair, bool, error) {
+	for _, r := range reqs {
+		if p, ok := im.KeyPairs[r.CipherText]; ok {
+			if r.Mode == repository.EncodeMode {
+				p.EncodeKey = r.Key
+			} else {
+				p.DecodeKey = r.Key
+			}
+			return p, true, nil
+		}
+
+		newKeyPair := &repository.KeyPair{}
+
+		if r.Mode == repository.EncodeMode {
+			newKeyPair.EncodeKey = r.Key
+		} else {
+			newKeyPair.DecodeKey = r.Key
+		}
+
+		im.KeyPairs[r.CipherText] = newKeyPair
+	}
 
 	return nil, false, nil
 }

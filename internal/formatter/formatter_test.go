@@ -43,3 +43,17 @@ func TestFastFormatter(t *testing.T) {
 		assert.Equal(t, tc.expected, formatter.FastFormatter(tc.key, tc.keyLength))
 	}
 }
+
+// BenchmarkDefaultFormatter-8   	 9532310	       113 ns/op
+func BenchmarkDefaultFormatter(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		_ = formatter.DefaultFormatter(4294967295, 32)
+	}
+}
+
+// BenchmarkFastFormatter-8   	22248036	        52.4 ns/op
+func BenchmarkFastFormatter(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		_ = formatter.FastFormatter(4294967295, 32)
+	}
+}

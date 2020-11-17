@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	encodeMode Mode = "encode"
-	decodeMode Mode = "decode"
+	encodeMode = "encode"
+	decodeMode = "decode"
 )
 
 // Mode represents the operation mode.
@@ -37,12 +37,13 @@ type Cracker struct {
 	decFn         decrypter.Decrypter
 	formatterFn   formatter.Formatter
 	keyCalcFn     keycalculator.KeyCalculator
+	bufferSize    int
 }
 
 type task struct {
 	key  string
 	text string
-	mode Mode
+	mode string
 	fn   func(key, plainText string) (string, error)
 }
 
@@ -57,6 +58,7 @@ func New(
 	formatterFn formatter.Formatter,
 	keyCalcFn keycalculator.KeyCalculator,
 	perfNumGoRoutines perf.MaxGoRoutineNumber,
+	bufferSize int,
 ) (*Cracker, error) {
 	keyNum, err := keyCalcFn(keyLength)
 	if err != nil {
@@ -74,21 +76,23 @@ func New(
 		decFn:         decFn,
 		formatterFn:   formatterFn,
 		keyCalcFn:     keyCalcFn,
+		bufferSize:    bufferSize,
 	}, nil
 }
 
 // Crack returns the matching key pair. False is returned when the pair is not found.
 func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 
-	// 3 go routines are reserved for: waiting for a result, producing and waiting for the other go routines.
-	const reservedGoRoutinesNum = 3
+	// 4 go routines are reserved for: waiting for a result, producing and waiting for the other go routines.
+	const reservedGoRoutinesNum = 4
 
 	var (
-		tasks   = make(chan task, c.goRoutinesNum-reservedGoRoutinesNum)
-		result  = make(chan KeyPair, 1)
-		taskBar = pb.StartNew(c.keyNum * 2)
-		keyPair KeyPair
-		found   bool
+		tasks      = make(chan task, c.goRoutinesNum-reservedGoRoutinesNum)
+		insertReqs = make(chan repository.InsertBulkRequest, c.bufferSize)
+		result     = make(chan KeyPair, 1)
+		taskBar    = pb.StartNew(c.keyNum * 2)
+		keyPair    KeyPair
+		found      bool
 	)
 
 	defer taskBar.Finish()
@@ -107,22 +111,58 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 		return nil
 	})
 
+	// insert and check
+	g.Go(func() error {
+		var (
+			insertReqBuf = make([]repository.InsertBulkRequest, c.bufferSize)
+			idx          int
+		)
+		for {
+			select {
+			case r := <-insertReqs:
+				insertReqBuf[idx] = r
+				if idx == c.bufferSize-1 {
+					kp, wasFound, err := c.inserter.InsertBulk(insertReqBuf...)
+					if err != nil {
+						log.Println(fmt.Sprintf("error while processing task %v", err))
+					}
+					if wasFound {
+						result <- KeyPair{
+							EncodeKey: kp.EncodeKey,
+							DecodeKey: kp.DecodeKey,
+						}
+					}
+					insertReqBuf, idx = make([]repository.InsertBulkRequest, c.bufferSize), 0
+					taskBar.Add(c.bufferSize)
+					continue
+				}
+				idx++
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				break
+			}
+		}
+	})
+
 	// consumer
-	for i := 0; i < c.goRoutinesNum-reservedGoRoutinesNum; i++ {
+	for i := 0; i < c.goRoutinesNum-reservedGoRoutinesNum/2; i++ {
 		g.Go(func() error {
 			for {
 				select {
 				case t := <-tasks:
-					taskBar.Add64(1)
-
-					kp, wasFound, err := c.handleTask(t)
+					cipherText, err := t.fn(t.key, t.text)
 					if err != nil {
 						log.Println(fmt.Sprintf("error while processing task %v", err))
 						break
 					}
-					if wasFound {
-						result <- kp
+
+					insertReqs <- repository.InsertBulkRequest{
+						Key:        t.key,
+						CipherText: cipherText,
+						Mode:       t.mode,
 					}
+
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
@@ -157,30 +197,8 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 	}
 
 	close(tasks)
+	close(insertReqs)
 	close(result)
 
 	return &keyPair, found, nil
-}
-
-func (c *Cracker) handleTask(t task) (KeyPair, bool, error) {
-	var res KeyPair
-
-	cipherText, err := t.fn(t.key, t.text)
-	if err != nil {
-		return res, false, err
-	}
-
-	kp, wasFound, err := c.inserter.Insert(t.key, cipherText, repository.Mode(t.mode))
-	if err != nil {
-		return res, false, err
-	}
-
-	if kp != nil && kp.DecodeKey != "" && kp.EncodeKey != "" {
-		res = KeyPair{
-			EncodeKey: kp.EncodeKey,
-			DecodeKey: kp.DecodeKey,
-		}
-	}
-
-	return res, wasFound, err
 }
