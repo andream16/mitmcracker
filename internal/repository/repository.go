@@ -1,5 +1,7 @@
 package repository
 
+import "context"
+
 const (
 	EncodeMode = "encode"
 	DecodeMode = "decode"
@@ -7,8 +9,8 @@ const (
 
 // Inserter represents the repository interface.
 type Inserter interface {
-	Insert(key, cipherText, mode string) (*KeyPair, bool, error)
-	InsertBulk(reqs ...InsertBulkRequest) (*KeyPair, bool, error)
+	Insert(ctx context.Context, key, cipherText, mode string) (*KeyPair, bool, error)
+	InsertBulk(ctx context.Context, reqs ...InsertBulkRequest) (*KeyPair, bool, error)
 }
 
 // InsertBulkRequest represents an InsertBulk request.

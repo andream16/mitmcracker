@@ -1,5 +1,9 @@
 package cli
 
+import (
+	"regexp"
+)
+
 var (
 	keyLengths = map[uint]struct{}{
 		24: {},
@@ -11,6 +15,9 @@ var (
 		"memory": {},
 		"disk":   {},
 	}
+
+	// hexPattern matches exactly 16 hex digits (64-bit blocks as per OCaml requirement)
+	hexPattern = regexp.MustCompile(`^[0-9A-Fa-f]{16}$`)
 )
 
 // Config represents the input that can be passed to the command.
@@ -45,21 +52,49 @@ type Storage struct {
 }
 
 func (c *Config) Validate() error {
-	_, ok := keyLengths[c.KeyLength]
-	if !ok {
-		return InvalidInputFlagError{field: "key", reason: "it must be either '24', '28' or '32' bits."}
-	}
-	if c.EncText == "" {
-		return InvalidInputFlagError{field: "encoded", reason: "it must be not empty"}
-	}
-	if c.PlainText == "" {
-		return InvalidInputFlagError{field: "plain", reason: "it must be not empty"}
-	}
-	if c.Storage != nil && c.Storage.Type != "" {
-		_, ok := storages[c.Storage.Type]
-		if !ok {
-			return InvalidInputFlagError{field: "storage", reason: "it must be either 'memory' or 'disk'"}
+	if _, ok := keyLengths[c.KeyLength]; !ok {
+		return InvalidInputFlagError{
+			field:  "key",
+			reason: "it must be either '24', '28' or '32' bits",
 		}
 	}
+
+	if c.EncText == "" {
+		return InvalidInputFlagError{
+			field:  "encoded",
+			reason: "it must not be empty",
+		}
+	}
+
+	if !hexPattern.MatchString(c.EncText) {
+		return InvalidInputFlagError{
+			field:  "encoded",
+			reason: "it must be exactly 16 hexadecimal digits (0-9, A-F)",
+		}
+	}
+
+	if c.PlainText == "" {
+		return InvalidInputFlagError{
+			field:  "plain",
+			reason: "it must not be empty",
+		}
+	}
+
+	if !hexPattern.MatchString(c.PlainText) {
+		return InvalidInputFlagError{
+			field:  "plain",
+			reason: "it must be exactly 16 hexadecimal digits (0-9, A-F)",
+		}
+	}
+
+	if c.Storage != nil && c.Storage.Type != "" {
+		if _, ok := storages[c.Storage.Type]; !ok {
+			return InvalidInputFlagError{
+				field:  "storage",
+				reason: "it must be either 'memory' or 'disk'",
+			}
+		}
+	}
+
 	return nil
 }

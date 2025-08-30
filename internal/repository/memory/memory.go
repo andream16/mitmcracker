@@ -1,16 +1,28 @@
 package memory
 
 import (
+	"context"
+	"sync"
+
 	"github.com/andream16/mitmcracker/internal/repository"
 )
 
-// InMemo represents an in-memory map.
+// InMemo represents an in-memory map with thread-safe operations.
 type InMemo struct {
 	KeyPairs map[string]*repository.KeyPair
+	mu       sync.RWMutex
 }
 
-// Insert
-func (im *InMemo) Insert(key, cipherText, mode string) (*repository.KeyPair, bool, error) {
+// Insert adds a key-ciphertext pair to the repository.
+func (im *InMemo) Insert(ctx context.Context, key, cipherText, mode string) (*repository.KeyPair, bool, error) {
+	select {
+	case <-ctx.Done():
+		return nil, false, ctx.Err()
+	default:
+	}
+
+	im.mu.Lock()
+	defer im.mu.Unlock()
 	if p, ok := im.KeyPairs[cipherText]; ok {
 		if mode == repository.EncodeMode {
 			p.EncodeKey = key
@@ -33,7 +45,15 @@ func (im *InMemo) Insert(key, cipherText, mode string) (*repository.KeyPair, boo
 	return nil, false, nil
 }
 
-func (im *InMemo) InsertBulk(reqs ...repository.InsertBulkRequest) (*repository.KeyPair, bool, error) {
+func (im *InMemo) InsertBulk(ctx context.Context, reqs ...repository.InsertBulkRequest) (*repository.KeyPair, bool, error) {
+	select {
+	case <-ctx.Done():
+		return nil, false, ctx.Err()
+	default:
+	}
+
+	im.mu.Lock()
+	defer im.mu.Unlock()
 	for _, r := range reqs {
 		if p, ok := im.KeyPairs[r.CipherText]; ok {
 			if r.Mode == repository.EncodeMode {

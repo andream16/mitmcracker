@@ -8,6 +8,16 @@ type InvalidInputFlagError struct {
 	reason string
 }
 
-func (i InvalidInputFlagError) Error() string {
-	return fmt.Sprintf("invalid input flag %s: %s", i.field, i.reason)
+func (e InvalidInputFlagError) Error() string {
+	return fmt.Sprintf("invalid input flag '%s': %s", e.field, e.reason)
+}
+
+// Field returns the field name that caused the error.
+func (e InvalidInputFlagError) Field() string {
+	return e.field
+}
+
+// Reason returns the reason for the error.
+func (e InvalidInputFlagError) Reason() string {
+	return e.reason
 }

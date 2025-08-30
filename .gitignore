@@ -1,7 +1,16 @@
 vendor/
 .vscode/
 .idea/
-resources/
 node_modules/
 mitmcracker
 *.pprof
+coverage.out
+coverage.html
+
+# OCaml compiled files
+resources/*.cmo
+resources/*.cmi
+resources/*.cmx
+resources/*.o
+resources/encrypt
+resources/decrypt

@@ -3,8 +3,7 @@ package cracker
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/andream16/mitmcracker/internal/decrypter"
 	"github.com/andream16/mitmcracker/internal/encrypter"
@@ -122,9 +121,9 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 			case r := <-insertReqs:
 				insertReqBuf[idx] = r
 				if idx == c.bufferSize-1 {
-					kp, wasFound, err := c.inserter.InsertBulk(insertReqBuf...)
+					kp, wasFound, err := c.inserter.InsertBulk(ctx, insertReqBuf...)
 					if err != nil {
-						log.Println(fmt.Sprintf("error while processing task %v", err))
+						slog.Error("Error processing bulk insert", "error", err)
 					}
 					if wasFound {
 						result <- KeyPair{
@@ -153,7 +152,11 @@ func (c *Cracker) Crack(ctx context.Context) (*KeyPair, bool, error) {
 				case t := <-tasks:
 					cipherText, err := t.fn(t.key, t.text)
 					if err != nil {
-						log.Println(fmt.Sprintf("error while processing task %v", err))
+						slog.Debug("Error processing task", 
+							"key", t.key, 
+							"mode", t.mode, 
+							"error", err,
+						)
 						break
 					}
 

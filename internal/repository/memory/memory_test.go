@@ -1,6 +1,7 @@
 package memory_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/andream16/mitmcracker/internal/repository"
@@ -55,7 +56,7 @@ func TestInMemo_Insert(t *testing.T) {
 				expectedFound: true,
 			},
 		} {
-			kp, found, err := inMemo.Insert(in.key, in.cipherText, in.mode)
+			kp, found, err := inMemo.Insert(context.Background(), in.key, in.cipherText, in.mode)
 			require.NoError(t, err)
 
 			if in.expectedFound {
@@ -111,7 +112,7 @@ func TestInMemo_InsertBulk(t *testing.T) {
 			},
 		}
 
-		kp, found, err := inMemo.InsertBulk(insertReqs...)
+		kp, found, err := inMemo.InsertBulk(context.Background(), insertReqs...)
 		require.NoError(t, err)
 		require.True(t, found)
 		assert.Equal(t, matchingEncKey, kp.EncodeKey)
@@ -165,7 +166,7 @@ func BenchmarkInMemo_Insert(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		for _, r := range insertReqs {
-			_, _, _ = inMemo.Insert(r.key, r.cipherText, r.mode)
+			_, _, _ = inMemo.Insert(context.Background(), r.key, r.cipherText, r.mode)
 		}
 	}
 }
@@ -211,6 +212,6 @@ func BenchmarkInMemo_InsertBulk(b *testing.B) {
 	}
 
 	for n := 0; n < b.N; n++ {
-		_, _, _ = inMemo.InsertBulk(insertReqs...)
+		_, _, _ = inMemo.InsertBulk(context.Background(), insertReqs...)
 	}
 }
